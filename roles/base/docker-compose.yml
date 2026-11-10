@@ -1,0 +1,18 @@
+# Rol "base": va UNA vez en cada máquina Linux, tenga los roles que tenga.
+# Expone las métricas del sistema (CPU, RAM, disco, red) en el puerto 9100.
+# En Windows (Diego) no se usa.
+name: ingdatos-base
+
+services:
+  node-exporter:
+    image: prom/node-exporter:v1.8.2
+    container_name: node-exporter
+    restart: unless-stopped
+    network_mode: host   # D2: sin NAT, ve las interfaces reales
+    pid: host
+    command:
+      - --path.rootfs=/host
+      - --web.listen-address=:9100
+      - --collector.filesystem.mount-points-exclude=^/(dev|proc|run|sys|var/lib/docker/.+)($|/)
+    volumes:
+      - /:/host:ro,rslave

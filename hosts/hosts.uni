@@ -1,0 +1,12 @@
+# Laboratorio final en la universidad (D17, D18): módem Telmex de Luis, sin internet.
+# Las reservas por MAC viajan con el módem, así que estas IPs son las mismas allá.
+#   .104 = laptop de Vladimir  (db1)
+#   .103 = laptop de Many      (db2)
+#   .105 = VM de Lalo          (db3)
+#   .102 = laptop de Luis      (app)
+#   .106 = laptop de Diego     (mon, Windows)
+192.168.1.104   db1
+192.168.1.103   db2
+192.168.1.105   db3
+192.168.1.102   app
+192.168.1.106   mon

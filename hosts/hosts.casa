@@ -1,0 +1,10 @@
+# Laboratorio de casa (D17). Una línea por rol.
+# IPs reservadas por MAC en el módem Telmex. Si el módem asigna otras, cámbialas aquí.
+#   .101 = VM del escritorio de Luis   (db1 + app + mon)
+#   .102 = laptop Mint de Luis         (db3)
+#   .103 = laptop de Many              (db2)
+192.168.1.101   db1
+192.168.1.103   db2
+192.168.1.102   db3
+192.168.1.101   app
+192.168.1.101   mon

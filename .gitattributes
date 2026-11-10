@@ -1,0 +1,6 @@
+# Todo en LF: los scripts y configs se ejecutan en Linux aunque se editen en Windows
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.tar binary
+*.zip binary

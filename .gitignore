@@ -1,0 +1,17 @@
+# Secretos: nunca al repo
+.env
+*.env
+!.env.example
+**/keyfile
+**/*.key
+**/*.pem
+
+# Paquetes generados para los compañeros (zips con imágenes)
+dist/
+
+# Node
+node_modules/
+
+# Sistema
+.DS_Store
+Thumbs.db

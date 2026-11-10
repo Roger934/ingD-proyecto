@@ -1,0 +1,56 @@
+# Rol "mon": Prometheus + Grafana (D17).
+# Casa: VM del escritorio (Linux). Uni: laptop de Diego (Windows + Docker Desktop).
+# Por eso NO usa network_mode: host (Docker Desktop no lo maneja igual):
+# publica los puertos y resuelve los roles con extra_hosts tomados de .env.
+name: ingdatos-mon
+
+x-hosts: &hosts
+  extra_hosts:
+    - "db1:${DB1_IP:?Falta DB1_IP en .env}"
+    - "db2:${DB2_IP:?Falta DB2_IP en .env}"
+    - "db3:${DB3_IP:?Falta DB3_IP en .env}"
+    - "app:${APP_IP:?Falta APP_IP en .env}"
+
+services:
+  prometheus:
+    image: prom/prometheus:v3.1.0
+    container_name: prometheus
+    restart: unless-stopped
+    <<: *hosts
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=7d
+      - --web.enable-lifecycle   # permite recargar la config con POST /-/reload
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+
+  grafana:
+    image: grafana/grafana:11.4.0
+    container_name: grafana
+    restart: unless-stopped
+    depends_on:
+      - prometheus
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: "${GRAFANA_ADMIN_PASSWORD:?Falta GRAFANA_ADMIN_PASSWORD en .env}"
+      GF_USERS_ALLOW_SIGN_UP: "false"
+      # Sin internet en la uni (D18): que no intente buscar actualizaciones ni mandar estadísticas
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+      GF_ANALYTICS_CHECK_FOR_UPDATES: "false"
+      GF_ANALYTICS_CHECK_FOR_PLUGIN_UPDATES: "false"
+      GF_NEWS_NEWS_FEED_ENABLED: "false"
+      GF_DASHBOARDS_DEFAULT_HOME_DASHBOARD_PATH: /var/lib/grafana/dashboards/plataforma-nodos.json
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana-data:/var/lib/grafana
+
+volumes:
+  prometheus-data:
+  grafana-data:
