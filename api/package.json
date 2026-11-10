@@ -1,0 +1,20 @@
+{
+  "name": "ingdatos-api",
+  "version": "0.1.0",
+  "private": true,
+  "description": "API del e-commerce distribuido: MySQL + PostgreSQL + MongoDB con Saga",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "express": "4.21.2",
+    "mongodb": "6.12.0",
+    "mysql2": "3.11.5",
+    "pg": "8.13.1",
+    "prom-client": "15.1.3"
+  }
+}

@@ -1,4 +1,4 @@
-# Rol app (D17): segundo mongos (la API se agrega en la etapa 3).
+# Rol app (D17): API + segundo mongos. (El simulador se agrega en la etapa 4.)
 # Casa: VM del escritorio. Uni: laptop de Luis.
 name: ingdatos-app
 
@@ -13,3 +13,20 @@ services:
               "--bind_ip_all", "--keyFile", "/tmp/mongo-keyfile"]
     volumes:
       - ../../secretos/mongo-keyfile:/run/mongo-keyfile:ro
+
+  # API (etapa 3). Se construye a partir de ../../api (la primera vez necesita internet: npm ci).
+  # Solo recibe las contraseñas de los usuarios app_*: nunca root/postgres/admin.
+  api:
+    build: ../../api
+    image: ingdatos-api:0.1.0
+    container_name: api-app
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      PORT: "8080"
+      MYSQL_HOSTS: db1,db2           # se usa el que no esté en read_only
+      PG_HOSTS: db2,db3              # se usa el que no esté en recuperación
+      MONGO_HOSTS: db3:27017,app:27017
+      MYSQL_APP_PASSWORD: "${MYSQL_APP_PASSWORD:?Falta .env: corre bash scripts/generar-secretos.sh}"
+      PG_APP_PASSWORD: "${PG_APP_PASSWORD:?Falta .env}"
+      MONGO_APP_PASSWORD: "${MONGO_APP_PASSWORD:?Falta .env}"

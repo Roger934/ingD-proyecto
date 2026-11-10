@@ -47,5 +47,8 @@ scrape_configs:
       - targets: ["db3:9216"]
         labels: { rol: db3 }
 
-  # --- Etapa 3 ---
-  # - job_name: api          # /metrics de la API en app:8080
+  # API (etapa 3): compras, latencia, compensaciones y fallas por paso de la Saga
+  - job_name: api
+    static_configs:
+      - targets: ["app:8080"]
+        labels: { rol: app }

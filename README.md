@@ -24,9 +24,14 @@ hosts/        hosts.casa, hosts.uni (rol → IP)
 roles/
   base/       node_exporter
   mon/        Prometheus + Grafana (con dashboard ya cargado)
-  db1/ db2/ db3/ app/   (se agregan por etapas)
-scripts/      aplicar-hosts.sh, preflight.sh, generar-secretos.sh, verificar.sh
-  mysql/ postgres/ mongo/   init-* (y luego failover-*, rejoin-*)
+  db1/ db2/ db3/   bases de datos de cada rol
+  app/        API + mongos
+db/           esquemas: mysql/schema.sql, postgres/schema.sql, mongo/init.js
+seed/         generar.js (catálogo maestro + seeds); datos/ se genera y NO va a git
+api/          API en Node (Express): conexiones tolerantes a fallas y Saga de POST /compras
+scripts/      aplicar-hosts.sh, preflight.sh, generar-secretos.sh, verificar.sh,
+              generar-datos.sh, conteos.sh, probar-compra.sh, demo-fragmentacion.sh
+  mysql/ postgres/ mongo/   init-*, esquema.sh, datos.sh (y luego failover-*, rejoin-*)
 secretos/     contraseñas y keyFile (lo crea generar-secretos.sh, NO va a git)
 ```
 
@@ -88,6 +93,58 @@ En `mon`, recarga Prometheus para que lea los nuevos destinos: `docker compose r
 En Grafana aparece el dashboard **Plataforma — Replicación**.
 
 > En db3, el PostgreSQL standby **no** arranca con `docker compose up -d` (perfil `standby`). Lo crea y lo arranca `init-standby.sh`. Para reiniciarlo a mano: `docker compose --profile standby up -d postgres`.
+
+## Etapa 3 — Datos y API
+
+Necesita la etapa 2 funcionando (`bash scripts/verificar.sh` sano en las 3 máquinas).
+
+**Modelo** (fragmentación de cada motor):
+
+| Motor | Tablas / colecciones | Fragmentación | Registros |
+|---|---|---|---|
+| MySQL | clientes, direcciones, **pedidos**, **pedido_cliente**, detalle_pedido | vertical: Pedido = `pedidos ⋈ pedido_cliente` por la misma PK (vista `pedido_completo`) | ~73k |
+| PostgreSQL | sucursales, productos_sucursal, **inventario**, reservas, **movimientos** | horizontal: `PARTITION BY LIST (sucursal_id)`, 5 fragmentos | ~110k |
+| MongoDB | **catalogo**, resenas, carritos, logs_busqueda, **eventos** | sharding hashed de `catalogo.producto_id` y `eventos.pedido_id` | ~88k |
+
+Los seeds salen de `seed/generar.js`, que es **determinista**: cada máquina genera los mismos datos (con su Node o con un contenedor `node:22.12.0`), así que los `producto_id`, `cliente_id`, `sucursal_id` y `pedido_id` coinciden en los 3 motores.
+
+**1. Esquema y datos (cada script crea el esquema si falta y luego carga):**
+
+| # | Dónde | Comando |
+|---|---|---|
+| 1 | db1 | `bash scripts/mysql/datos.sh` |
+| 2 | db2 | `bash scripts/postgres/datos.sh` |
+| 3 | db3 o app | `bash scripts/mongo/datos.sh` |
+
+Con `--reiniciar` borran todo y cargan de nuevo. Las réplicas reciben los datos solas: `bash scripts/conteos.sh` en db2 y db3 lo comprueba.
+
+**2. API (máquina con el rol `app`):**
+```bash
+cd roles/app && docker compose up -d --build
+curl -s localhost:8080/salud
+```
+En `mon`: `docker compose restart prometheus` para que aparezca el destino `api`.
+
+**3. Probar una compra de punta a punta:**
+```bash
+bash scripts/probar-compra.sh          # compra, repetición idempotente, carrito, stock insuficiente con compensación
+bash scripts/demo-fragmentacion.sh     # JOIN de MySQL, EXPLAIN con pruning, reparto de chunks
+```
+
+**Endpoints:** `GET /salud` · `POST /compras` · `GET /pedidos/:id` (desde los 3 motores) · `GET /inventario/:sucursal?producto_id=1,2` · `GET /productos/:id` · `GET /metrics`.
+
+`POST /compras` recibe `{ cliente_id, sucursal_id, items?: [{ producto_id, cantidad }], resena?: { calificacion, comentario } }` y el encabezado opcional `Idempotency-Key`. Sin `items`, compra lo que hay en el carrito del cliente.
+
+**Saga de la compra** (`api/src/saga.js`):
+
+| Paso | Motor | Acción | Si falla |
+|---|---|---|---|
+| 1 | Mongo | carritos, catalogo, logs_busqueda | abortar |
+| 2 | PostgreSQL | sucursales y productos_sucursal (precio local, solo lectura) | abortar |
+| 3 | MySQL | clientes, direcciones → pedidos (PENDIENTE), pedido_cliente, detalle_pedido | abortar |
+| 4 | PostgreSQL | inventario −, reservas, movimientos (SALIDA) | pedido → CANCELADO |
+| 5 | MySQL | pedido → CONFIRMADO | liberar reserva (LIBERACION) y pedido → CANCELADO |
+| 6 | Mongo | eventos, vaciar carrito, resenas | reintentar (idempotente) |
 
 ## Reglas
 

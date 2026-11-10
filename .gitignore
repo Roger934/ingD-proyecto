@@ -16,3 +16,6 @@ node_modules/
 # Sistema
 .DS_Store
 Thumbs.db
+
+# Seeds generados (se regeneran con scripts/generar-datos.sh)
+seed/datos/
