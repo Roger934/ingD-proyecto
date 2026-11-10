@@ -124,7 +124,7 @@ async function compensar(tipo, fn, eventos, evento) {
 async function guardarEventos(pedidoId, eventos) {
   if (!eventos.length) return true;
   const ops = eventos.map((ev) => {
-    const doc = { pedido_id: pedidoId, clave_evento: `${pedidoId}:${ev.tipo}`, origen: 'api', fecha: new Date(), ...ev };
+    const doc = { fecha: new Date(), ...ev, pedido_id: pedidoId, clave_evento: `${pedidoId}:${ev.tipo}`, origen: 'api' };
     // El filtro incluye pedido_id (la shard key): mongos manda la escritura a un solo shard.
     return { updateOne: { filter: { pedido_id: pedidoId, clave_evento: doc.clave_evento }, update: { $setOnInsert: doc }, upsert: true } };
   });
@@ -161,7 +161,9 @@ async function comprar(body, claveHeader) {
 }
 
 async function ejecutar(c) {
+  // Cada evento guarda la hora en que ocurrió su paso (no la hora en que se escribe en Mongo).
   const eventos = [];
+  eventos.push = (...evs) => Array.prototype.push.apply(eventos, evs.map((ev) => ({ fecha: new Date(), ...ev })));
   const fallo = (paso, motor, e) => {
     m.fallasPaso.inc({ paso: String(paso), motor });
     if (e instanceof ErrorCompra) return e;
