@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Se corre en db3 DESPUÉS de init-primario.sh en db2.
-# Copia el primario con pg_basebackup (streaming + slot) y arranca el standby.
+# Copia el primario con pg_basebackup (streaming, sin slot: D27) y arranca el standby.
 #   bash scripts/postgres/init-standby.sh            → solo si el standby aún no existe
 #   bash scripts/postgres/init-standby.sh --forzar   → borra el standby actual y lo vuelve a copiar
 set -euo pipefail
@@ -36,7 +36,7 @@ export PGPASSWORD="$PG_REPL_PASSWORD"
 "${DC[@]}" run --rm --no-deps --user postgres -e PGPASSWORD --entrypoint pg_basebackup postgres \
   -h db2 -p 5432 -U repl_pg \
   -D /var/lib/postgresql/data \
-  -R -X stream -S standby_db3 -P
+  -R -X stream -P
 unset PGPASSWORD
 
 info "Arrancando el standby"

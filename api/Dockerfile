@@ -5,6 +5,8 @@ ENV NODE_ENV=production
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev && npm cache clean --force
 COPY src ./src
+# /estado: volumen del vigilante (al montarse vacío hereda este dueño)
+RUN mkdir -p /estado && chown node:node /estado
 USER node
 EXPOSE 8080
 CMD ["node", "src/index.js"]

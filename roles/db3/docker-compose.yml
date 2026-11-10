@@ -18,6 +18,10 @@ services:
     profiles: ["standby"]
     restart: unless-stopped
     network_mode: host
+    environment:
+      PG_REPL_PASSWORD: "${PG_REPL_PASSWORD:?Falta .env: corre bash scripts/generar-secretos.sh}"
+    # Siempre arranca como standby; el vigilante lo promueve si cae db2 (D27)
+    entrypoint: ["bash", "/etc/postgresql/arranque.sh"]
     command:
       - postgres
       - -c
@@ -40,7 +44,15 @@ services:
       - password_encryption=scram-sha-256
       - -c
       - hba_file=/etc/postgresql/pg_hba.conf
+      # Failover (D27): como standby sigue a db2. La contraseña sale de ~/.pgpass (arranque.sh).
+      - -c
+      - primary_conninfo=host=db2 port=5432 user=repl_pg application_name=db3
+      - -c
+      - primary_slot_name=
+      - -c
+      - wal_keep_size=1GB
     volumes:
+      - ./postgres/arranque.sh:/etc/postgresql/arranque.sh:ro
       - ./postgres/pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
       - pg-data:/var/lib/postgresql/data
 

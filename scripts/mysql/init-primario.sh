@@ -27,6 +27,17 @@ GRANT SELECT ON performance_schema.* TO 'exporter_mysql'@'127.0.0.1';
 CREATE USER IF NOT EXISTS 'app_ecommerce'@'192.168.1.%' IDENTIFIED BY '${MYSQL_APP_PASSWORD}';
 ALTER USER 'app_ecommerce'@'192.168.1.%' IDENTIFIED BY '${MYSQL_APP_PASSWORD}';
 GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, ALTER, INDEX, REFERENCES, DROP ON ecommerce.* TO 'app_ecommerce'@'192.168.1.%';
+
+-- Vigilante de failover (D27): solo puede cambiar read_only y manejar la replicación. No lee ni escribe datos.
+CREATE USER IF NOT EXISTS 'failover_mysql'@'192.168.1.%' IDENTIFIED BY '${MYSQL_FAILOVER_PASSWORD}';
+ALTER USER 'failover_mysql'@'192.168.1.%' IDENTIFIED BY '${MYSQL_FAILOVER_PASSWORD}';
+GRANT SYSTEM_VARIABLES_ADMIN, REPLICATION_SLAVE_ADMIN, REPLICATION CLIENT, RELOAD ON *.* TO 'failover_mysql'@'192.168.1.%';
+GRANT SELECT ON performance_schema.* TO 'failover_mysql'@'192.168.1.%';
+
+-- D27: al reiniciarse, este nodo vuelve en SOLO LECTURA y lo habilita el vigilante (sin split brain).
+-- PERSIST_ONLY no cambia nada ahora: solo aplica en el próximo arranque.
+SET PERSIST_ONLY read_only = ON;
+SET PERSIST_ONLY super_read_only = ON;
 SQL
 
 docker exec -e MYSQL_PWD "$C" mysql --default-character-set=utf8mb4 -uroot -t -e \

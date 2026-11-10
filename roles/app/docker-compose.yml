@@ -30,3 +30,27 @@ services:
       MYSQL_APP_PASSWORD: "${MYSQL_APP_PASSWORD:?Falta .env: corre bash scripts/generar-secretos.sh}"
       PG_APP_PASSWORD: "${PG_APP_PASSWORD:?Falta .env}"
       MONGO_APP_PASSWORD: "${MONGO_APP_PASSWORD:?Falta .env}"
+
+  # Vigilante de failover automático de MySQL y PostgreSQL (D25, D27). Misma imagen que la API.
+  # Debe haber UNO solo en todo el laboratorio. Estado: http://app:8090/estado
+  vigilante:
+    build: ../../api
+    image: ingdatos-api:0.1.0
+    container_name: vigilante-app
+    restart: unless-stopped
+    network_mode: host
+    command: ["node", "src/vigilante.js"]
+    environment:
+      PORT: "8090"
+      MYSQL_HOSTS: db1,db2           # en este orden se prefiere el primario
+      PG_HOSTS: db2,db3
+      CICLO_MS: "2000"               # revisa cada 2 s
+      UMBRAL: "5"                    # 5 ciclos sin primario (~10 s) antes de promover
+      MYSQL_FAILOVER_PASSWORD: "${MYSQL_FAILOVER_PASSWORD:?Falta .env: corre bash scripts/generar-secretos.sh}"
+      MYSQL_REPL_PASSWORD: "${MYSQL_REPL_PASSWORD:?Falta .env}"
+      PG_FAILOVER_PASSWORD: "${PG_FAILOVER_PASSWORD:?Falta .env}"
+    volumes:
+      - vigilante-estado:/estado     # recuerda el último primario de cada motor
+
+volumes:
+  vigilante-estado:

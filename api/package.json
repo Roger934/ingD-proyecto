@@ -5,7 +5,8 @@
   "description": "API del e-commerce distribuido: MySQL + PostgreSQL + MongoDB con Saga",
   "main": "src/index.js",
   "scripts": {
-    "start": "node src/index.js"
+    "start": "node src/index.js",
+    "probar-vigilante": "node test/vigilante.prueba.js"
   },
   "engines": {
     "node": ">=22"

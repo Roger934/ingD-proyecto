@@ -89,7 +89,11 @@ const pgSel = selectorPrimario('postgres', CFG.pgHosts,
     pool.on('error', () => pgSel.olvidar(pool)); // un cliente inactivo perdió la conexión
     return pool;
   },
-  async (pool) => { const r = await pool.query('SELECT pg_is_in_recovery() AS rec'); return r.rows[0].rec === false; },
+  // Primario = no está en recuperación y no fue "cercado" por el vigilante (default_transaction_read_only)
+  async (pool) => {
+    const r = await pool.query("SELECT pg_is_in_recovery() AS rec, current_setting('default_transaction_read_only') AS ro");
+    return r.rows[0].rec === false && r.rows[0].ro === 'off';
+  },
   (pool) => pool.end());
 
 // Los errores de pg traen "code"; los de conexión a veces vienen sin code y con este mensaje.

@@ -30,6 +30,13 @@ x-postgres-cmd: &postgres-cmd
   - password_encryption=scram-sha-256
   - -c
   - hba_file=/etc/postgresql/pg_hba.conf
+  # Failover (D27): si este nodo es standby, sigue a db3. La contraseña sale de ~/.pgpass (arranque.sh).
+  - -c
+  - primary_conninfo=host=db3 port=5432 user=repl_pg application_name=db2
+  - -c
+  - primary_slot_name=
+  - -c
+  - wal_keep_size=1GB         # sin slots: se guardan 1 GB de WAL para que el standby se ponga al día
 
 services:
   mysql:
@@ -66,8 +73,12 @@ services:
     environment:
       POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?Falta .env}"
       POSTGRES_DB: ecommerce
+      PG_REPL_PASSWORD: "${PG_REPL_PASSWORD:?Falta .env}"
+    # Siempre arranca como standby si ya tiene datos; el vigilante lo promueve (D27)
+    entrypoint: ["bash", "/etc/postgresql/arranque.sh"]
     command: *postgres-cmd
     volumes:
+      - ./postgres/arranque.sh:/etc/postgresql/arranque.sh:ro
       - ./postgres/pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
       - pg-data:/var/lib/postgresql/data
 

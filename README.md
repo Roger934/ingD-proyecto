@@ -146,6 +146,37 @@ bash scripts/demo-fragmentacion.sh     # JOIN de MySQL, EXPLAIN con pruning, rep
 | 5 | MySQL | pedido → CONFIRMADO | liberar reserva (LIBERACION) y pedido → CANCELADO |
 | 6 | Mongo | eventos, vaciar carrito, resenas | reintentar (idempotente) |
 
+## Etapa 4 — Failover automático (D25, D27)
+
+El **vigilante** (`api/src/vigilante.js`, contenedor `vigilante-app` del rol `app`) revisa MySQL y PostgreSQL cada 2 s y promueve al respaldo si el primario deja de responder (~10–15 s). Estado: `curl -s app:8090/estado`.
+
+**Regla contra el split brain: ningún nodo se vuelve primario solo.**
+- MySQL arranca siempre en **solo lectura** (`SET PERSIST_ONLY super_read_only`). El vigilante lo habilita con `SET GLOBAL`, que no se persiste.
+- PostgreSQL arranca siempre como **standby** (`roles/db*/postgres/arranque.sh` crea `standby.signal`). El vigilante lo promueve con `pg_promote()`.
+- Un primario caído que regresa queda en solo lectura:
+  - MySQL: el vigilante lo reengancha como réplica si sus GTID son un subconjunto de los del nuevo primario.
+  - PostgreSQL: vuelve solo como standby; si divergió, `rejoin.sh`.
+- Si aparecen dos primarios, el vigilante cerca al que no es oficial (`super_read_only` / `default_transaction_read_only`).
+- Sin replication slots: `wal_keep_size=1GB`.
+
+| Qué cae | Qué hace el vigilante |
+|---|---|
+| Primario MySQL | promueve a la réplica que lo seguía; al volver, el viejo queda como réplica |
+| Primario PostgreSQL | promueve al standby que lo seguía; el viejo vuelve como standby |
+| Reinicio rápido del primario | lo vuelve a habilitar (no hay failover) |
+| Reinicio de todo | habilita al último primario conocido (`/estado` en un volumen) |
+
+Respaldo manual, por si el vigilante no está:
+
+| Script | Dónde | Qué hace |
+|---|---|---|
+| `bash scripts/mysql/failover.sh` | máquina a promover | promueve su MySQL |
+| `bash scripts/mysql/rejoin.sh <primario> [--reconstruir]` | máquina que regresa | réplica por GTID; con `--reconstruir`, la borra y la copia de nuevo |
+| `bash scripts/postgres/failover.sh` | máquina a promover | `pg_promote()` |
+| `bash scripts/postgres/rejoin.sh <primario>` | máquina que regresa | la vuelve a copiar con `pg_basebackup` |
+
+Prueba de la lógica sin bases (clúster simulado en memoria): `cd api && npm run probar-vigilante`.
+
 ## Reglas
 
 - Imágenes con **versión fija**. Nada de `latest`.

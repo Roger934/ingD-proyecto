@@ -52,3 +52,9 @@ scrape_configs:
     static_configs:
       - targets: ["app:8080"]
         labels: { rol: app }
+
+  # Vigilante de failover (etapa 4): quién es primario, nodos alcanzables, failovers
+  - job_name: vigilante
+    static_configs:
+      - targets: ["app:8090"]
+        labels: { rol: app }
