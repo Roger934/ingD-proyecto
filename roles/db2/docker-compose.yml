@@ -1,0 +1,118 @@
+# Rol db2 (D17): MySQL RÉPLICA · PostgreSQL PRIMARIO · Mongo cfg2 + shardA-2 · exporters
+# Casa y uni: laptop de Many.
+name: ingdatos-db2
+
+x-mongo: &mongo
+  image: mongo:7.0.14
+  restart: unless-stopped
+  network_mode: host
+  entrypoint: ["bash", "-c", "install -m 400 -o 999 -g 999 /run/mongo-keyfile /tmp/mongo-keyfile && exec docker-entrypoint.sh \"$$@\"", "mongo"]
+
+x-postgres-cmd: &postgres-cmd
+  - postgres
+  - -c
+  - listen_addresses=*
+  - -c
+  - port=5432
+  - -c
+  - wal_level=replica
+  - -c
+  - max_wal_senders=5
+  - -c
+  - max_replication_slots=5
+  - -c
+  - wal_log_hints=on          # necesario para pg_rewind al reincorporar un primario caído
+  - -c
+  - hot_standby=on
+  - -c
+  - shared_buffers=256MB
+  - -c
+  - password_encryption=scram-sha-256
+  - -c
+  - hba_file=/etc/postgresql/pg_hba.conf
+
+services:
+  mysql:
+    image: mysql:8.4.3
+    container_name: mysql-db2
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD:?Falta .env: corre bash scripts/generar-secretos.sh}"
+      MYSQL_ROOT_HOST: localhost
+      MYSQL_INITDB_SKIP_TZINFO: "1"
+    volumes:
+      - ./mysql/my.cnf:/etc/mysql/conf.d/ingdatos.cnf:ro
+      - mysql-data:/var/lib/mysql
+
+  mysqld-exporter:
+    image: prom/mysqld-exporter:v0.16.0
+    container_name: mysqld-exporter-db2
+    restart: unless-stopped
+    network_mode: host
+    depends_on: [mysql]
+    environment:
+      MYSQLD_EXPORTER_PASSWORD: "${MYSQL_EXPORTER_PASSWORD:?Falta .env}"
+    command:
+      - --mysqld.address=127.0.0.1:3306
+      - --mysqld.username=exporter_mysql
+      - --web.listen-address=:9104
+
+  postgres:
+    image: postgres:16.6
+    container_name: postgres-db2
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:?Falta .env}"
+      POSTGRES_DB: ecommerce
+    command: *postgres-cmd
+    volumes:
+      - ./postgres/pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
+      - pg-data:/var/lib/postgresql/data
+
+  postgres-exporter:
+    image: quay.io/prometheuscommunity/postgres-exporter:v0.16.0
+    container_name: postgres-exporter-db2
+    restart: unless-stopped
+    network_mode: host
+    depends_on: [postgres]
+    environment:
+      DATA_SOURCE_URI: "127.0.0.1:5432/postgres?sslmode=disable"
+      DATA_SOURCE_USER: exporter_pg
+      DATA_SOURCE_PASS: "${PG_EXPORTER_PASSWORD:?Falta .env}"
+    command: ["--web.listen-address=:9187"]
+
+  mongo-cfg:
+    <<: *mongo
+    container_name: mongo-cfg-db2
+    command: ["mongod", "--configsvr", "--replSet", "cfgRS", "--port", "27019", "--bind_ip_all",
+              "--keyFile", "/tmp/mongo-keyfile", "--wiredTigerCacheSizeGB", "0.25", "--dbpath", "/data/configdb"]
+    volumes:
+      - ../../secretos/mongo-keyfile:/run/mongo-keyfile:ro
+      - mongo-cfg-data:/data/configdb
+
+  mongo-shard:
+    <<: *mongo
+    container_name: mongo-shard-db2
+    command: ["mongod", "--shardsvr", "--replSet", "shardA", "--port", "27018", "--bind_ip_all",
+              "--keyFile", "/tmp/mongo-keyfile", "--wiredTigerCacheSizeGB", "0.25", "--dbpath", "/data/db"]
+    volumes:
+      - ../../secretos/mongo-keyfile:/run/mongo-keyfile:ro
+      - mongo-shard-data:/data/db
+
+  mongodb-exporter:
+    image: percona/mongodb_exporter:0.40.0
+    container_name: mongodb-exporter-db2
+    restart: unless-stopped
+    network_mode: host
+    depends_on: [mongo-shard]
+    environment:
+      MONGODB_URI: "mongodb://exporter_mongo:${MONGO_EXPORTER_PASSWORD:?Falta .env}@127.0.0.1:27018/admin?directConnection=true"
+    command: ["--collect-all", "--compatible-mode", "--web.listen-address=:9216"]
+
+volumes:
+  mysql-data:
+  pg-data:
+  mongo-cfg-data:
+  mongo-shard-data:

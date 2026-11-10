@@ -1,4 +1,5 @@
 # Secretos: nunca al repo
+secretos/
 .env
 *.env
 !.env.example

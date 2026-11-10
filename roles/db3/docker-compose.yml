@@ -1,0 +1,97 @@
+# Rol db3 (D17): PostgreSQL STANDBY · Mongo cfg3 + shardA-3 · mongos · exporters
+# Casa: laptop de Luis. Uni: VM de Lalo.
+name: ingdatos-db3
+
+x-mongo: &mongo
+  image: mongo:7.0.14
+  restart: unless-stopped
+  network_mode: host
+  entrypoint: ["bash", "-c", "install -m 400 -o 999 -g 999 /run/mongo-keyfile /tmp/mongo-keyfile && exec docker-entrypoint.sh \"$$@\"", "mongo"]
+
+services:
+  # El standby NO arranca con un "docker compose up -d" normal (perfil "standby"):
+  # con el volumen vacío se crearía una base nueva en vez de copiar la del primario.
+  # Lo crea y lo arranca scripts/postgres/init-standby.sh (pg_basebackup desde db2).
+  postgres:
+    image: postgres:16.6
+    container_name: postgres-db3
+    profiles: ["standby"]
+    restart: unless-stopped
+    network_mode: host
+    command:
+      - postgres
+      - -c
+      - listen_addresses=*
+      - -c
+      - port=5432
+      - -c
+      - wal_level=replica
+      - -c
+      - max_wal_senders=5
+      - -c
+      - max_replication_slots=5
+      - -c
+      - wal_log_hints=on
+      - -c
+      - hot_standby=on
+      - -c
+      - shared_buffers=256MB
+      - -c
+      - password_encryption=scram-sha-256
+      - -c
+      - hba_file=/etc/postgresql/pg_hba.conf
+    volumes:
+      - ./postgres/pg_hba.conf:/etc/postgresql/pg_hba.conf:ro
+      - pg-data:/var/lib/postgresql/data
+
+  postgres-exporter:
+    image: quay.io/prometheuscommunity/postgres-exporter:v0.16.0
+    container_name: postgres-exporter-db3
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      DATA_SOURCE_URI: "127.0.0.1:5432/postgres?sslmode=disable"
+      DATA_SOURCE_USER: exporter_pg
+      DATA_SOURCE_PASS: "${PG_EXPORTER_PASSWORD:?Falta .env: corre bash scripts/generar-secretos.sh}"
+    command: ["--web.listen-address=:9187"]
+
+  mongo-cfg:
+    <<: *mongo
+    container_name: mongo-cfg-db3
+    command: ["mongod", "--configsvr", "--replSet", "cfgRS", "--port", "27019", "--bind_ip_all",
+              "--keyFile", "/tmp/mongo-keyfile", "--wiredTigerCacheSizeGB", "0.25", "--dbpath", "/data/configdb"]
+    volumes:
+      - ../../secretos/mongo-keyfile:/run/mongo-keyfile:ro
+      - mongo-cfg-data:/data/configdb
+
+  mongo-shard:
+    <<: *mongo
+    container_name: mongo-shard-db3
+    command: ["mongod", "--shardsvr", "--replSet", "shardA", "--port", "27018", "--bind_ip_all",
+              "--keyFile", "/tmp/mongo-keyfile", "--wiredTigerCacheSizeGB", "0.25", "--dbpath", "/data/db"]
+    volumes:
+      - ../../secretos/mongo-keyfile:/run/mongo-keyfile:ro
+      - mongo-shard-data:/data/db
+
+  mongos:
+    <<: *mongo
+    container_name: mongos-db3
+    command: ["mongos", "--configdb", "cfgRS/db1:27019,db2:27019,db3:27019", "--port", "27017",
+              "--bind_ip_all", "--keyFile", "/tmp/mongo-keyfile"]
+    volumes:
+      - ../../secretos/mongo-keyfile:/run/mongo-keyfile:ro
+
+  mongodb-exporter:
+    image: percona/mongodb_exporter:0.40.0
+    container_name: mongodb-exporter-db3
+    restart: unless-stopped
+    network_mode: host
+    depends_on: [mongo-shard]
+    environment:
+      MONGODB_URI: "mongodb://exporter_mongo:${MONGO_EXPORTER_PASSWORD:?Falta .env}@127.0.0.1:27018/admin?directConnection=true"
+    command: ["--collect-all", "--compatible-mode", "--web.listen-address=:9216"]
+
+volumes:
+  pg-data:
+  mongo-cfg-data:
+  mongo-shard-data:

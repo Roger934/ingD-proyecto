@@ -1,0 +1,103 @@
+{
+  "uid": "plataforma-replicacion",
+  "title": "Plataforma — Replicación",
+  "description": "Estado de los 3 motores, quién es primario y retraso de las réplicas. Es la pantalla para las pruebas de falla.",
+  "tags": ["ingdatos"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "editable": false,
+  "refresh": "5s",
+  "time": { "from": "now-15m", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Motores (¿el exporter llega a la base?)",
+      "gridPos": { "x": 0, "y": 0, "w": 24, "h": 5 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "refId": "A", "expr": "mysql_up", "legendFormat": "MySQL {{rol}}", "instant": true },
+        { "refId": "B", "expr": "pg_up", "legendFormat": "PostgreSQL {{rol}}", "instant": true },
+        { "refId": "C", "expr": "mongodb_up", "legendFormat": "Mongo {{rol}}", "instant": true }
+      ],
+      "options": {
+        "colorMode": "background", "graphMode": "none", "textMode": "value_and_name",
+        "justifyMode": "center", "orientation": "vertical",
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false }
+      },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [ { "type": "value", "options": { "0": { "text": "CAÍDO", "color": "red" }, "1": { "text": "ARRIBA", "color": "green" } } } ],
+          "color": { "mode": "thresholds" },
+          "thresholds": { "mode": "absolute", "steps": [ { "color": "red", "value": null }, { "color": "green", "value": 1 } ] }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "MySQL — rol de cada servidor",
+      "gridPos": { "x": 0, "y": 5, "w": 8, "h": 5 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [ { "refId": "A", "expr": "mysql_global_variables_super_read_only", "legendFormat": "{{rol}}", "instant": true } ],
+      "options": { "colorMode": "background", "graphMode": "none", "textMode": "value_and_name", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false } },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [ { "type": "value", "options": { "0": { "text": "PRIMARIO", "color": "blue" }, "1": { "text": "RÉPLICA", "color": "purple" } } } ],
+          "color": { "mode": "fixed", "fixedColor": "text" }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "PostgreSQL — rol de cada servidor",
+      "gridPos": { "x": 8, "y": 5, "w": 8, "h": 5 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [ { "refId": "A", "expr": "pg_replication_is_replica", "legendFormat": "{{rol}}", "instant": true } ],
+      "options": { "colorMode": "background", "graphMode": "none", "textMode": "value_and_name", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false } },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [ { "type": "value", "options": { "0": { "text": "PRIMARIO", "color": "blue" }, "1": { "text": "STANDBY", "color": "purple" } } } ],
+          "color": { "mode": "fixed", "fixedColor": "text" }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Mongo shardA — estado de cada miembro",
+      "gridPos": { "x": 16, "y": 5, "w": 8, "h": 5 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [ { "refId": "A", "expr": "mongodb_mongod_replset_my_state", "legendFormat": "{{rol}}", "instant": true } ],
+      "options": { "colorMode": "background", "graphMode": "none", "textMode": "value_and_name", "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false } },
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [ { "type": "value", "options": {
+            "1": { "text": "PRIMARY", "color": "blue" },
+            "2": { "text": "SECONDARY", "color": "purple" },
+            "0": { "text": "STARTUP", "color": "orange" },
+            "8": { "text": "DOWN", "color": "red" } } } ],
+          "color": { "mode": "fixed", "fixedColor": "text" }
+        },
+        "overrides": []
+      }
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Retraso de las réplicas (segundos)",
+      "gridPos": { "x": 0, "y": 10, "w": 24, "h": 9 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "targets": [
+        { "refId": "A", "expr": "mysql_slave_status_seconds_behind_master", "legendFormat": "MySQL {{rol}}" },
+        { "refId": "B", "expr": "pg_replication_lag_seconds", "legendFormat": "PostgreSQL {{rol}}" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "s", "min": 0 }, "overrides": [] }
+    }
+  ]
+}

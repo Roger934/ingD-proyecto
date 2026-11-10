@@ -1,0 +1,15 @@
+# Rol app (D17): segundo mongos (la API se agrega en la etapa 3).
+# Casa: VM del escritorio. Uni: laptop de Luis.
+name: ingdatos-app
+
+services:
+  mongos:
+    image: mongo:7.0.14
+    container_name: mongos-app
+    restart: unless-stopped
+    network_mode: host
+    entrypoint: ["bash", "-c", "install -m 400 -o 999 -g 999 /run/mongo-keyfile /tmp/mongo-keyfile && exec docker-entrypoint.sh \"$$@\"", "mongo"]
+    command: ["mongos", "--configdb", "cfgRS/db1:27019,db2:27019,db3:27019", "--port", "27017",
+              "--bind_ip_all", "--keyFile", "/tmp/mongo-keyfile"]
+    volumes:
+      - ../../secretos/mongo-keyfile:/run/mongo-keyfile:ro

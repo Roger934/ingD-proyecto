@@ -23,8 +23,29 @@ scrape_configs:
       - targets: ["app:9100"]
         labels: { rol: app }
 
-  # --- Se activan en las siguientes etapas ---
-  # - job_name: mysql        # mysqld_exporter :9104 en db1 y db2
-  # - job_name: postgres     # postgres_exporter :9187 en db2 y db3
-  # - job_name: mongodb      # mongodb_exporter :9216 en db1, db2 y db3
+  # Motores (etapa 2)
+  - job_name: mysql
+    static_configs:
+      - targets: ["db1:9104"]
+        labels: { rol: db1 }
+      - targets: ["db2:9104"]
+        labels: { rol: db2 }
+
+  - job_name: postgres
+    static_configs:
+      - targets: ["db2:9187"]
+        labels: { rol: db2 }
+      - targets: ["db3:9187"]
+        labels: { rol: db3 }
+
+  - job_name: mongodb
+    static_configs:
+      - targets: ["db1:9216"]
+        labels: { rol: db1 }
+      - targets: ["db2:9216"]
+        labels: { rol: db2 }
+      - targets: ["db3:9216"]
+        labels: { rol: db3 }
+
+  # --- Etapa 3 ---
   # - job_name: api          # /metrics de la API en app:8080
