@@ -64,6 +64,22 @@ app.get('/inventario/:sucursal', ruta(async (req, res) => {
   res.json({ sucursal_id: sucursal, fragmento: `inventario_s${sucursal}`, productos: filas });
 }));
 
+// Llenar o reemplazar el carrito de un cliente (Mongo). Body: { sucursal_id, items: [{ producto_id, cantidad }] }
+// Lo usan probar-compra.sh y el simulador para el flujo "agregar al carrito → comprar".
+app.put('/carritos/:cliente', ruta(async (req, res) => {
+  if (!idValido(req.params.cliente)) throw new ErrorCompra(400, 'DATOS_INVALIDOS', 'cliente inválido');
+  const b = req.body || {};
+  const entero = (v, max) => Number.isInteger(v) && v >= 1 && v <= max;
+  if (!entero(b.sucursal_id, 32767) || !Array.isArray(b.items) || b.items.length < 1 || b.items.length > 20
+      || !b.items.every((i) => i && entero(i.producto_id, 2 ** 31 - 1) && entero(i.cantidad, 1000))) {
+    throw new ErrorCompra(400, 'DATOS_INVALIDOS', 'Se necesita sucursal_id e items (1 a 20) con producto_id y cantidad');
+  }
+  const doc = { cliente_id: Number(req.params.cliente), sucursal_id: b.sucursal_id,
+    items: b.items.map((i) => ({ producto_id: i.producto_id, cantidad: i.cantidad })), actualizado: new Date() };
+  await db.conMongo((m) => m.collection('carritos').updateOne({ cliente_id: doc.cliente_id }, { $set: doc }, { upsert: true }));
+  res.json(doc);
+}));
+
 // Producto del catálogo (Mongo).
 app.get('/productos/:id', ruta(async (req, res) => {
   if (!idValido(req.params.id)) throw new ErrorCompra(400, 'DATOS_INVALIDOS', 'id inválido');

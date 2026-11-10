@@ -27,7 +27,8 @@ id=$(pedido_de "$r")
 titulo "3. La misma compra otra vez (misma Idempotency-Key): debe decir repetida y el mismo pedido"
 pedir POST /compras '{"cliente_id":1,"sucursal_id":1,"items":[{"producto_id":1,"cantidad":2},{"producto_id":8,"cantidad":1}]}' "Idempotency-Key: $CLAVE"
 
-titulo "4. Compra desde el carrito del cliente 1 (Mongo), sin items"
+titulo "4. Llenar el carrito del cliente 1 y comprar desde él (Mongo), sin items"
+pedir PUT /carritos/1 '{"sucursal_id":5,"items":[{"producto_id":211,"cantidad":1},{"producto_id":674,"cantidad":1}]}'
 pedir POST /compras '{"cliente_id":1,"sucursal_id":5}'
 
 titulo "5. Stock insuficiente → la Saga compensa y el pedido queda CANCELADO"

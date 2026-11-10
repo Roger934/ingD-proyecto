@@ -165,8 +165,8 @@ async function ejecutar(c) {
   const eventos = [];
   eventos.push = (...evs) => Array.prototype.push.apply(eventos, evs.map((ev) => ({ fecha: new Date(), ...ev })));
   const fallo = (paso, motor, e) => {
+    if (e instanceof ErrorCompra) return e; // regla de negocio (sin stock, carrito vacío…): no es falla del motor
     m.fallasPaso.inc({ paso: String(paso), motor });
-    if (e instanceof ErrorCompra) return e;
     const status = e instanceof ErrorMotor ? 503 : 500;
     return new ErrorCompra(status, e instanceof ErrorMotor ? 'MOTOR_NO_DISPONIBLE' : 'ERROR_INTERNO', e.message, { motor, paso });
   };
