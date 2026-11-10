@@ -16,8 +16,8 @@ for c in $locales; do
   case "$c" in
     mysql-*)
       [[ -z $solo || $solo == mysql ]] || continue
-      titulo "MySQL ($c) — $(docker exec -e MYSQL_PWD "$c" mysql -uroot -N -e 'SELECT IF(@@read_only, "réplica", "primario")')"
-      docker exec -e MYSQL_PWD "$c" mysql -uroot -t ecommerce -e "
+      titulo "MySQL ($c) — $(docker exec -e MYSQL_PWD "$c" mysql --default-character-set=utf8mb4 -uroot -N -e 'SELECT IF(@@read_only, "réplica", "primario")')"
+      docker exec -e MYSQL_PWD "$c" mysql --default-character-set=utf8mb4 -uroot -t ecommerce -e "
         SELECT 'clientes' AS tabla, COUNT(*) AS registros FROM clientes
         UNION ALL SELECT 'direcciones', COUNT(*) FROM direcciones
         UNION ALL SELECT 'pedidos', COUNT(*) FROM pedidos

@@ -12,7 +12,7 @@ exigir_contenedor "$C"
 esperar "MySQL listo en db1" 90 docker exec "$C" mysqladmin --protocol=TCP -h127.0.0.1 -P3306 ping
 
 info "Creando base 'ecommerce' y usuarios (repl, exporter, app)"
-docker exec -i -e MYSQL_PWD "$C" mysql -uroot <<SQL
+docker exec -i -e MYSQL_PWD "$C" mysql --default-character-set=utf8mb4 -uroot <<SQL
 CREATE DATABASE IF NOT EXISTS ecommerce CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci;
 
 CREATE USER IF NOT EXISTS 'repl_mysql'@'192.168.1.%' IDENTIFIED BY '${MYSQL_REPL_PASSWORD}';
@@ -29,6 +29,6 @@ ALTER USER 'app_ecommerce'@'192.168.1.%' IDENTIFIED BY '${MYSQL_APP_PASSWORD}';
 GRANT SELECT, INSERT, UPDATE, DELETE, CREATE, ALTER, INDEX, REFERENCES, DROP ON ecommerce.* TO 'app_ecommerce'@'192.168.1.%';
 SQL
 
-docker exec -e MYSQL_PWD "$C" mysql -uroot -t -e \
+docker exec -e MYSQL_PWD "$C" mysql --default-character-set=utf8mb4 -uroot -t -e \
   "SELECT @@server_id AS server_id, @@gtid_mode AS gtid_mode, @@read_only AS read_only; SHOW BINARY LOG STATUS;"
 ok "db1 listo como primario. Sigue: en db2, bash scripts/mysql/init-replica.sh"

@@ -18,14 +18,14 @@ for c in $locales; do
   case "$c" in
     mysql-*)
       titulo "MySQL ($c)"
-      docker exec -e MYSQL_PWD "$c" mysql -uroot -t -e \
+      docker exec -e MYSQL_PWD "$c" mysql --default-character-set=utf8mb4 -uroot -t -e \
         "SELECT @@server_id AS server_id, @@read_only AS read_only, @@super_read_only AS super_ro, @@gtid_executed AS gtid_executed;"
-      estado=$(docker exec -e MYSQL_PWD "$c" mysql -uroot -e "SHOW REPLICA STATUS\G" 2>/dev/null)
+      estado=$(docker exec -e MYSQL_PWD "$c" mysql --default-character-set=utf8mb4 -uroot -e "SHOW REPLICA STATUS\G" 2>/dev/null)
       if [[ -n "$estado" ]]; then
         echo "$estado" | grep -E ' (Source_Host|Replica_IO_Running|Replica_SQL_Running|Seconds_Behind_Source|Last_IO_Error|Last_SQL_Error):'
       else
         echo "Es PRIMARIO. Réplicas conectadas:"
-        docker exec -e MYSQL_PWD "$c" mysql -uroot -t -e "SHOW REPLICAS;"
+        docker exec -e MYSQL_PWD "$c" mysql --default-character-set=utf8mb4 -uroot -t -e "SHOW REPLICAS;"
       fi
       ;;
     postgres-db*)

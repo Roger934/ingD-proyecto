@@ -14,11 +14,11 @@ for c in $locales; do
     mysql-*)
       titulo "MySQL ($c): fragmentación vertical de Pedido"
       echo "Fragmento 1 (pedidos) y fragmento 2 (pedido_cliente) del pedido 1:"
-      docker exec -e MYSQL_PWD "$c" mysql -uroot -t ecommerce -e "
+      docker exec -e MYSQL_PWD "$c" mysql --default-character-set=utf8mb4 -uroot -t ecommerce -e "
         SELECT * FROM pedidos WHERE id = 1;
         SELECT * FROM pedido_cliente WHERE pedido_id = 1;"
       echo "Reconstrucción: pedidos ⋈ pedido_cliente por la misma PK (vista pedido_completo):"
-      docker exec -e MYSQL_PWD "$c" mysql -uroot -t ecommerce -e "
+      docker exec -e MYSQL_PWD "$c" mysql --default-character-set=utf8mb4 -uroot -t ecommerce -e "
         SELECT p.id, p.cliente_id, p.total, p.estado, pc.destinatario, pc.ciudad, pc.cp
         FROM pedidos p JOIN pedido_cliente pc ON pc.pedido_id = p.id WHERE p.id = 1;
         SELECT (SELECT COUNT(*) FROM pedidos) AS pedidos, (SELECT COUNT(*) FROM pedido_cliente) AS pedido_cliente,

@@ -11,7 +11,7 @@ esperar "MySQL listo en db2" 90 docker exec "$C" mysqladmin --protocol=TCP -h127
 esperar "db1 alcanzable en el puerto 3306" 30 bash -c 'exec 3<>/dev/tcp/db1/3306'
 
 export MYSQL_PWD="$MYSQL_ROOT_PASSWORD"
-sql() { docker exec -i -e MYSQL_PWD "$C" mysql -uroot "$@"; }
+sql() { docker exec -i -e MYSQL_PWD "$C" mysql --default-character-set=utf8mb4 -uroot "$@"; }
 
 configurada=$(sql -N -e "SELECT COUNT(*) FROM performance_schema.replication_connection_configuration;")
 if [[ "$configurada" == "0" ]]; then
