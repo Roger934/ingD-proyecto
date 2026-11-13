@@ -145,28 +145,44 @@ function percentil(arr, p) {
 
 // Huecos sin servicio. Un segundo está "caído" si la mayoría de las peticiones que empezaron en él fallaron
 // (durante una caída algunas repeticiones idempotentes sí responden; por eso no basta con una sola respuesta).
-// Los segundos caídos seguidos forman una ventana: de la primera falla a la última.
+// Los segundos caídos seguidos forman una ventana. Empieza con la primera petición que falló y termina
+// cuando responde bien una petición que EMPEZÓ después de la última que falló: ese es el momento en que
+// el servicio volvió para las compras nuevas. (No se usa la hora en que terminó la última falla: con una
+// máquina apagada de golpe, una petición puede quedarse colgada 15 s y alargaría el corte de mentira.)
 function ventanasSinServicio() {
   const porSegundo = new Map();
   for (const x of est.intentos) {
     const s = Math.floor(x.ini / 1000);
-    const b = porSegundo.get(s) || { fallas: 0, utiles: 0, desde: Infinity, hasta: 0 };
+    const b = porSegundo.get(s) || { fallas: 0, utiles: 0, primeraFalla: Infinity, ultimaFalla: 0, finFalla: 0 };
     if (x.util) b.utiles++;
-    else { b.fallas++; b.desde = Math.min(b.desde, x.ini); b.hasta = Math.max(b.hasta, x.fin); }
+    else {
+      b.fallas++;
+      b.primeraFalla = Math.min(b.primeraFalla, x.ini);
+      b.ultimaFalla = Math.max(b.ultimaFalla, x.ini);
+      b.finFalla = Math.max(b.finFalla, x.fin);
+    }
     porSegundo.set(s, b);
   }
-  const ultimoUtil = est.intentos.reduce((t, x) => (x.util ? Math.max(t, x.fin) : t), 0);
   const ventanas = [];
   let actual = null, previo = null;
   for (const s of [...porSegundo.keys()].sort((a, b) => a - b)) {
     const b = porSegundo.get(s);
     if (b.fallas > b.utiles) {
-      if (actual && previo === s - 1) actual.hasta = Math.max(actual.hasta, b.hasta);
-      else { actual = { desde: b.desde, hasta: b.hasta }; ventanas.push(actual); }
+      if (actual && previo === s - 1) {
+        actual.ultimaFalla = Math.max(actual.ultimaFalla, b.ultimaFalla);
+        actual.finFalla = Math.max(actual.finFalla, b.finFalla);
+      } else {
+        actual = { desde: b.primeraFalla, ultimaFalla: b.ultimaFalla, finFalla: b.finFalla };
+        ventanas.push(actual);
+      }
       previo = s;
     }
   }
-  for (const v of ventanas) if (ultimoUtil < v.hasta) v.abierta = true; // nunca volvió a responder
+  for (const v of ventanas) {
+    const regreso = est.intentos.reduce((t, x) => (x.util && x.ini > v.ultimaFalla ? Math.min(t, x.fin) : t), Infinity);
+    if (regreso === Infinity) { v.hasta = v.finFalla; v.abierta = true; } // nunca volvió a responder
+    else v.hasta = regreso;
+  }
   return ventanas;
 }
 
