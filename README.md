@@ -23,14 +23,15 @@ Cada máquina cumple uno o más **roles**. Los roles son hostnames: mover un rol
 hosts/        hosts.casa, hosts.uni (rol → IP)
 roles/
   base/       node_exporter
-  mon/        Prometheus + Grafana (con dashboard ya cargado)
+  mon/        Prometheus + Grafana (dashboards Nodos, Replicación y Compras ya cargados)
   db1/ db2/ db3/   bases de datos de cada rol
   app/        API + mongos
 db/           esquemas: mysql/schema.sql, postgres/schema.sql, mongo/init.js
 seed/         generar.js (catálogo maestro + seeds); datos/ se genera y NO va a git
 api/          API en Node (Express): conexiones tolerantes a fallas y Saga de POST /compras
+simulador/    simulador.js: compras automáticas con reporte (D26)
 scripts/      aplicar-hosts.sh, preflight.sh, generar-secretos.sh, verificar.sh,
-              generar-datos.sh, conteos.sh, probar-compra.sh, demo-fragmentacion.sh
+              generar-datos.sh, conteos.sh, probar-compra.sh, demo-fragmentacion.sh, simular.sh
   mysql/ postgres/ mongo/   init-*, esquema.sh, datos.sh (y luego failover-*, rejoin-*)
 secretos/     contraseñas y keyFile (lo crea generar-secretos.sh, NO va a git)
 ```
@@ -176,6 +177,37 @@ Respaldo manual, por si el vigilante no está:
 | `bash scripts/postgres/rejoin.sh <primario>` | máquina que regresa | la vuelve a copiar con `pg_basebackup` |
 
 Prueba de la lógica sin bases (clúster simulado en memoria): `cd api && npm run probar-vigilante`.
+
+## Etapa 4 — Simulador de transacciones (D26)
+
+`simulador/simulador.js` compra por HTTP a la API sin intervención manual. Es Node puro, sin dependencias, y corre en el contenedor `simulador-app` del rol `app` (perfil `simulador`: **no** arranca con `up -d`).
+
+```bash
+bash scripts/simular.sh --n 100                  # 100 compras, 10 en paralelo
+bash scripts/simular.sh --n 1000 --concurrencia 20
+bash scripts/simular.sh --tps 20 --minutos 5     # carga constante: para las pruebas de falla
+bash scripts/simular.sh --n 100 --json > reporte.json
+bash scripts/simular.sh --ayuda
+```
+
+| Modo | Para qué |
+|---|---|
+| `--n N [--concurrencia C]` | Cargas de "decenas, cientos o miles": 10 / 100 / 1000 compras lo más rápido posible |
+| `--tps X --minutos T` | Ritmo constante mientras se tiran servicios: muestra cuánto dura la interrupción |
+
+Mezcla de compras (configurable): 30 % desde el carrito (`PUT /carritos` y luego `POST /compras` sin items), 10 % con reseña y 5 % que piden 1000 piezas (el inventario máximo es 600), así que **la Saga compensa** y el pedido queda CANCELADO.
+
+Si la API responde 5xx o no responde, la compra se **reintenta con la misma `Idempotency-Key`** (hasta `--reintentar-hasta`, 60 s). Si la compra sí se había hecho, la API devuelve el pedido original: no hay duplicados.
+
+**Reporte al terminar** (también con Ctrl+C):
+- confirmadas, compensadas, rechazadas, errores, reintentos y recuperadas por idempotencia;
+- compras confirmadas por segundo; latencia p50/p95/p99 por petición y por compra (con reintentos);
+- **segundos sin servicio** y sus ventanas (hora de inicio y fin), y los primarios antes y después según el vigilante;
+- **consistencia**: revisa una muestra de pedidos con `GET /pedidos/:id` en los 3 motores (estado en MySQL, reservas en PostgreSQL, eventos en Mongo).
+
+Sale con código 0 si no hubo errores y la muestra es consistente, y 1 si no.
+
+En Grafana, el dashboard **Plataforma — Compras** muestra en vivo: compras/s por resultado, latencia, compensaciones, fallas por paso de la Saga y el primario de cada motor.
 
 ## Reglas
 

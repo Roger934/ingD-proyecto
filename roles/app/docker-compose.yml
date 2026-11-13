@@ -1,4 +1,4 @@
-# Rol app (D17): API + segundo mongos. (El simulador se agrega en la etapa 4.)
+# Rol app (D17): API + segundo mongos + vigilante de failover + simulador (bajo demanda).
 # Casa: VM del escritorio. Uni: laptop de Luis.
 name: ingdatos-app
 
@@ -51,6 +51,24 @@ services:
       PG_FAILOVER_PASSWORD: "${PG_FAILOVER_PASSWORD:?Falta .env}"
     volumes:
       - vigilante-estado:/estado     # recuerda el último primario de cada motor
+
+  # Simulador de transacciones (etapa 4, D26). Compra por HTTP a la API y al final da un reporte.
+  # Perfil "simulador": NO arranca con "up -d". Se corre bajo demanda:
+  #   bash scripts/simular.sh --n 1000          (o --tps 20 --minutos 5; --ayuda para ver todo)
+  # Sin dependencias ni build: el script se monta en una imagen de Node con versión fija.
+  simulador:
+    image: node:22.12.0-bookworm-slim
+    container_name: simulador-app
+    profiles: ["simulador"]
+    network_mode: host
+    init: true                       # Ctrl+C llega al simulador y este imprime el reporte
+    user: node
+    entrypoint: ["node", "/sim/simulador.js"]
+    environment:
+      API: http://app:8080
+      VIGILANTE: http://app:8090
+    volumes:
+      - ../../simulador:/sim:ro
 
 volumes:
   vigilante-estado:
