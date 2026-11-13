@@ -22,6 +22,7 @@ const mysqlMock = {
     const n = my[host];
     if (!n || !n.up) throw Object.assign(new Error('connect ECONNREFUSED ' + host), { code: 'ECONNREFUSED' });
     return {
+      on: () => {},
       end: async () => {},
       query: async (sql, p = []) => {
         if (!n.up) throw new Error('perdida');
@@ -57,6 +58,7 @@ function tickPg() {
 const hex = (x) => '0/' + x.toString(16).toUpperCase();
 class ClientMock {
   constructor({ host }) { this.host = host; }
+  on() {}
   async connect() { const n = pg[this.host]; if (!n || !n.up) throw Object.assign(new Error('ECONNREFUSED ' + this.host), { code: 'ECONNREFUSED' }); }
   async end() {}
   async query(sql) {

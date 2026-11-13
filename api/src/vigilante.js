@@ -81,9 +81,14 @@ function fijarPrimario(m, host) {
 }
 
 // ======================= MySQL =======================
-const conMysql = (host) => mysql.createConnection({
-  host, port: 3306, user: 'failover_mysql', password: process.env.MYSQL_FAILOVER_PASSWORD, connectTimeout: 2000,
-});
+// Igual que en PostgreSQL: un error fatal entre consultas (MySQL se apagó) no debe tumbar al vigilante.
+const conMysql = async (host) => {
+  const cx = await mysql.createConnection({
+    host, port: 3306, user: 'failover_mysql', password: process.env.MYSQL_FAILOVER_PASSWORD, connectTimeout: 2000,
+  });
+  cx.on('error', () => {});
+  return cx;
+};
 
 async function sondearMysql(host) {
   const cx = await conMysql(host);
@@ -233,6 +238,9 @@ async function conPg(host, fn) {
     host, port: 5432, user: 'failover_pg', password: process.env.PG_FAILOVER_PASSWORD, database: 'ecommerce',
     connectionTimeoutMillis: 2000, statement_timeout: 40000,
   });
+  // Sin esta escucha, si PostgreSQL se apaga a media consulta el 'error' del cliente tumba al vigilante.
+  // La consulta en curso falla por su cuenta y el sondeo marca el nodo como no alcanzable.
+  cx.on('error', () => {});
   await cx.connect();
   try { return await fn(cx); } finally { await cx.end().catch(() => {}); }
 }

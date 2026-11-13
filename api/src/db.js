@@ -148,6 +148,11 @@ async function txPg(fn) {
   return conPg(async (pool) => {
     const cx = await pool.connect();
     let roto = false;
+    // Mientras el cliente está prestado, pg-pool le quita su escucha de 'error'. Si PostgreSQL se apaga
+    // entre dos consultas de la transacción, el cliente emite 'error' y, sin escucha, Node tumba la API.
+    // Aquí solo se marca: la consulta en curso falla por su cuenta y conReintento decide qué hacer.
+    const alPerderse = () => { roto = true; };
+    cx.on('error', alPerderse);
     try {
       await cx.query('BEGIN');
       const r = await fn(cx);
@@ -158,6 +163,8 @@ async function txPg(fn) {
       await cx.query('ROLLBACK').catch(() => {});
       throw e;
     } finally {
+      // Un cliente roto se destruye y puede emitir 'error' después: se le deja la escucha.
+      if (!roto) cx.removeListener('error', alPerderse);
       cx.release(roto);
     }
   });
