@@ -13,6 +13,10 @@ const CFG = {
   mysqlHosts: lista(process.env.MYSQL_HOSTS, 'db1,db2'),
   pgHosts: lista(process.env.PG_HOSTS, 'db2,db3'),
   mongoHosts: lista(process.env.MONGO_HOSTS, 'db3:27017,app:27017'),
+  // Límite por consulta. Si una máquina se apaga de golpe (o se desconecta el cable), no llega ningún
+  // aviso de TCP y una consulta en curso esperaría minutos. Con el límite, la conexión se da por perdida,
+  // se descarta y conReintento busca al primario de nuevo. Las consultas de la API tardan milisegundos.
+  consultaMs: Number(process.env.QUERY_TIMEOUT_MS || 5000),
 };
 
 class ErrorMotor extends Error {
@@ -65,14 +69,23 @@ function selectorPrimario(motor, hosts, crear, esPrimario, cerrar) {
 }
 
 // ---------- MySQL ----------
+// mysql2 no tiene un límite global por consulta: se agrega "timeout" a cada query del pool o de la conexión.
+// Al vencer da un error fatal (PROTOCOL_SEQUENCE_TIMEOUT) y mysql2 cierra esa conexión.
+function conLimiteMysql(obj) {
+  const original = obj.query.bind(obj);
+  obj.query = (sql, valores) => original(typeof sql === 'string' ? { sql, timeout: CFG.consultaMs } : { timeout: CFG.consultaMs, ...sql }, valores);
+  return obj;
+}
+
 const ERR_MYSQL_REINTENTABLE = new Set(['ECONNREFUSED', 'ECONNRESET', 'ETIMEDOUT', 'EHOSTUNREACH', 'ENOTFOUND', 'EPIPE',
   'PROTOCOL_CONNECTION_LOST', 'ER_OPTION_PREVENTS_STATEMENT', 'ER_SERVER_SHUTDOWN', 'ER_CON_COUNT_ERROR']);
 
 const mysqlSel = selectorPrimario('mysql', CFG.mysqlHosts,
-  (host) => mysql.createPool({
+  (host) => conLimiteMysql(mysql.createPool({
     host, port: 3306, user: 'app_ecommerce', password: process.env.MYSQL_APP_PASSWORD, database: 'ecommerce',
     connectionLimit: 15, connectTimeout: 3000, decimalNumbers: true, dateStrings: true, timezone: 'Z',
-  }),
+    enableKeepAlive: true, keepAliveInitialDelay: 2000,
+  })),
   async (pool) => { const [[r]] = await pool.query('SELECT @@global.read_only AS ro'); return Number(r.ro) === 0; },
   (pool) => pool.end());
 
@@ -85,6 +98,7 @@ const pgSel = selectorPrimario('postgres', CFG.pgHosts,
     const pool = new Pool({
       host, port: 5432, user: 'app_ecommerce', password: process.env.PG_APP_PASSWORD, database: 'ecommerce',
       max: 15, connectionTimeoutMillis: 3000, idleTimeoutMillis: 30000,
+      query_timeout: CFG.consultaMs, keepAlive: true, keepAliveInitialDelayMillis: 2000,
     });
     pool.on('error', () => pgSel.olvidar(pool)); // un cliente inactivo perdió la conexión
     return pool;
@@ -129,7 +143,7 @@ const conPg = (fn) => conReintento('postgres', pgSel, pgPerdida, fn);
 // Transacciones
 async function txMysql(fn) {
   return conMysql(async (pool) => {
-    const cx = await pool.getConnection();
+    const cx = conLimiteMysql(await pool.getConnection());
     try {
       await cx.beginTransaction();
       const r = await fn(cx);
