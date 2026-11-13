@@ -67,6 +67,7 @@ services:
     environment:
       API: http://app:8080
       VIGILANTE: http://app:8090
+      TZ: America/Mexico_City        # horas del reporte iguales a las de Grafana (el JSON sigue en UTC/ISO)
     volumes:
       - ../../simulador:/sim:ro
 
