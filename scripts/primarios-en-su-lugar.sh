@@ -150,7 +150,9 @@ done
 
 # ---------- MongoDB ----------
 titulo "mongo (debe estar en $DESEADO_MONGO)"
-CM="$(docker ps --format '{{.Names}}' | grep -m1 -E '^(mongo-shard|mongo-cfg|mongos)-' || true)"
+# Se prefiere el shard (siempre corre), luego el config server y al final un mongos.
+nombres_mongo="$(docker ps --format '{{.Names}}')"
+CM="$(for pre in mongo-shard mongo-cfg mongos; do grep -m1 "^$pre-" <<<"$nombres_mongo"; done | head -1 || true)"
 if [[ -z "$CM" ]]; then
   aviso "Esta máquina no tiene contenedores de Mongo: no puedo revisarlo desde aquí. Córrelo en db1, db2, db3 o app."
   pendientes=$((pendientes + 1))
@@ -159,7 +161,8 @@ else
     local h p
     for h in db1 db2 db3; do
       p=$(docker exec "$CM" mongosh --quiet --host "$h" --port "$1" --eval 'print(db.hello().primary || "")' 2>/dev/null | tail -1)
-      [[ -n "$p" ]] && { echo "$p"; return 0; }
+      # Solo vale una respuesta como "db1:27018": un error de docker exec no se toma por primario.
+      [[ "$p" =~ ^db[0-9]:[0-9]+$ ]] && { echo "$p"; return 0; }
     done
     return 1
   }
