@@ -3,7 +3,8 @@
 # que normalmente lo hace solo.
 #   bash scripts/mysql/rejoin.sh db2                 → réplica de db2 por GTID (si los datos son compatibles)
 #   bash scripts/mysql/rejoin.sh db2 --reconstruir   → BORRA este MySQL y lo vuelve a crear como réplica de db2
-#                                                      (cuando tiene transacciones que el primario no tiene)
+#                                                      (cuando tiene transacciones que el primario no tiene).
+#                                                      Le da un server_id nuevo para no saltarse eventos propios.
 set -euo pipefail
 source "$(dirname "$0")/../lib.sh"
 cargar_secretos
@@ -42,8 +43,12 @@ if [[ "${2:-}" == "--reconstruir" ]]; then
   docker volume rm "ingdatos-${ROL}_mysql-data"
   docker compose up -d mysql
   esperar "MySQL nuevo listo en $ROL" 120 docker exec "$C" mysqladmin --protocol=TCP -h127.0.0.1 -P3306 ping
-  info "Configurando la réplica desde cero: replicará toda la historia del binlog de $PRIMARIO"
-  sql -e "SET GLOBAL super_read_only = OFF; RESET BINARY LOGS AND GTIDS;"
+  # server_id nuevo: MySQL descarta en silencio los eventos del binlog que traen su propio server_id.
+  # Con el del my.cnf, este nodo perdería lo que escribió cuando fue primario (o lo que escribió
+  # otra máquina con el mismo rol). Formato: rol * 100000 + 5 dígitos de la hora → único y reconocible.
+  SID=$(( ${ROL#db} * 100000 + $(date +%s) % 100000 ))
+  info "Configurando la réplica desde cero (server_id $SID): replicará toda la historia del binlog de $PRIMARIO"
+  sql -e "SET GLOBAL super_read_only = OFF; SET PERSIST server_id = $SID; RESET BINARY LOGS AND GTIDS;"
   configurar_replica
 else
   exigir_contenedor "$C"
