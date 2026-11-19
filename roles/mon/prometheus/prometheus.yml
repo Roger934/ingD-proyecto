@@ -1,7 +1,7 @@
 # Prometheus del rol "mon". Todos los destinos van por nombre de rol (D19).
 # En casa, db1 y app son la misma máquina: sus gráficas se verán iguales, es normal.
 # Cada 5 s (antes 15 s): en las pruebas de falla una caída de ~10 s se ve en Grafana casi al instante.
-# Con este laboratorio (13 destinos, 7 días de retención) el costo en disco y CPU es mínimo.
+# Con este laboratorio (15 destinos, 7 días de retención) el costo en disco y CPU es mínimo.
 global:
   scrape_interval: 5s
   evaluation_interval: 5s
@@ -47,6 +47,14 @@ scrape_configs:
       - targets: ["db2:9216"]
         labels: { rol: db2 }
       - targets: ["db3:9216"]
+        labels: { rol: db3 }
+
+  # Los dos mongos (enrutadores): un exporter aparte en el puerto 9217 junto a cada uno
+  - job_name: mongos
+    static_configs:
+      - targets: ["app:9217"]
+        labels: { rol: app }
+      - targets: ["db3:9217"]
         labels: { rol: db3 }
 
   # API (etapa 3): compras, latencia, compensaciones y fallas por paso de la Saga

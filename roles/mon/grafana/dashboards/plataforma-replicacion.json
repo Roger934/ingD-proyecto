@@ -13,13 +13,14 @@
     {
       "id": 1,
       "type": "stat",
-      "title": "Motores (¿el exporter llega a la base?)",
+      "title": "Motores y mongos (¿el exporter llega?)",
       "gridPos": { "x": 0, "y": 0, "w": 24, "h": 5 },
       "datasource": { "type": "prometheus", "uid": "prometheus" },
       "targets": [
         { "refId": "A", "expr": "mysql_up", "legendFormat": "MySQL {{rol}}", "instant": true },
         { "refId": "B", "expr": "pg_up", "legendFormat": "PostgreSQL {{rol}}", "instant": true },
-        { "refId": "C", "expr": "mongodb_up", "legendFormat": "Mongo {{rol}}", "instant": true }
+        { "refId": "C", "expr": "mongodb_up{job=\"mongodb\"}", "legendFormat": "Mongo {{rol}}", "instant": true },
+        { "refId": "D", "expr": "min by (rol) ({job=\"mongos\", __name__=~\"up|mongodb_up\"})", "legendFormat": "mongos {{rol}}", "instant": true }
       ],
       "options": {
         "colorMode": "background", "graphMode": "none", "textMode": "value_and_name",

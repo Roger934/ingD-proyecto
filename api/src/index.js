@@ -31,6 +31,16 @@ app.post('/compras', ruta(async (req, res) => {
   res.status(r.repetida ? 200 : 201).json(r);
 }));
 
+// IDs de los últimos pedidos (MySQL primario). ?ultimos=N, de 1 a 50 (5 si no se indica). Lo usa scripts/ultimos.sh.
+app.get('/pedidos', ruta(async (req, res) => {
+  const n = Math.min(Math.max(Number.parseInt(req.query.ultimos, 10) || 5, 1), 50);
+  const ids = await db.conMysql(async (pool) => {
+    const [filas] = await pool.query('SELECT id FROM pedidos ORDER BY id DESC LIMIT ?', [n]);
+    return filas.map((f) => f.id);
+  });
+  res.json({ ids });
+}));
+
 // Pedido reconstruido desde los 3 motores (para la demo y para revisar la consistencia).
 app.get('/pedidos/:id', ruta(async (req, res) => {
   if (!idValido(req.params.id)) throw new ErrorCompra(400, 'DATOS_INVALIDOS', 'id inválido');

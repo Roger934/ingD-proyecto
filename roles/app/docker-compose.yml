@@ -14,6 +14,17 @@ services:
     volumes:
       - ../../secretos/mongo-keyfile:/run/mongo-keyfile:ro
 
+  # Exporter del mongos (puerto 9217): Grafana muestra si el enrutador está arriba.
+  # Sin depends_on: si el mongos cae, el exporter sigue y reporta mongodb_up = 0.
+  mongos-exporter:
+    image: percona/mongodb_exporter:0.40.0
+    container_name: mongos-exporter-app
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      MONGODB_URI: "mongodb://exporter_mongo:${MONGO_EXPORTER_PASSWORD:?Falta .env}@127.0.0.1:27017/admin"
+    command: ["--compatible-mode", "--web.listen-address=:9217"]
+
   # API (etapa 3). Se construye a partir de ../../api (la primera vez necesita internet: npm ci).
   # Solo recibe las contraseñas de los usuarios app_*: nunca root/postgres/admin.
   api:

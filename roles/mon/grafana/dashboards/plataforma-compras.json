@@ -195,7 +195,7 @@
         { "refId": "A", "expr": "max by (motor, nodo) (vigilante_es_primario) == 1", "legendFormat": "{{motor}} → {{nodo}}" },
         { "refId": "B", "expr": "max by (motor) (vigilante_sin_primario) == 1", "legendFormat": "{{motor}} SIN PRIMARIO" },
         { "refId": "C", "expr": "max by (rol) (mongodb_mongod_replset_my_state) == 1", "legendFormat": "mongo → {{rol}}" },
-        { "refId": "D", "expr": "max by (rol) (mongodb_up) == 0", "legendFormat": "mongo {{rol}} CAÍDO" }
+        { "refId": "D", "expr": "max by (rol) (mongodb_up{job=\"mongodb\"}) == 0", "legendFormat": "mongo {{rol}} CAÍDO" }
       ],
       "options": { "showValue": "never", "mergeValues": true, "rowHeight": 0.8, "legend": { "showLegend": false } },
       "fieldConfig": {
