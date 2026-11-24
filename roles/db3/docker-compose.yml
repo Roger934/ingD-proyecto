@@ -1,5 +1,5 @@
 # Rol db3 (D17): PostgreSQL STANDBY · Mongo cfg3 + shardA-3 · mongos · exporters
-# Casa: laptop de Luis. Uni: VM de Lalo.
+# Casa: laptop de Luis. Uni: laptop de Many (D29).
 name: ingdatos-db3
 
 x-mongo: &mongo

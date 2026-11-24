@@ -1,5 +1,5 @@
 # Rol db2 (D17): MySQL RÉPLICA · PostgreSQL PRIMARIO · Mongo cfg2 + shardA-2 · exporters
-# Casa y uni: laptop de Many.
+# Casa: laptop de Many. Uni: laptop de Lalo (D29).
 name: ingdatos-db2
 
 x-mongo: &mongo

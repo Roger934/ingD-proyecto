@@ -12,8 +12,8 @@ Cada máquina cumple uno o más **roles**. Los roles son hostnames: mover un rol
 |---|---|---|---|
 | `base` | node_exporter (una vez por máquina Linux) | todas | todas menos Diego |
 | `db1` | MySQL primario · Mongo cfg1 + shardA-1 | VM escritorio | Vladimir |
-| `db2` | MySQL réplica · PostgreSQL primario · Mongo cfg2 + shardA-2 | Many | Many |
-| `db3` | PostgreSQL standby · Mongo cfg3 + shardA-3 · mongos | laptop de Luis | VM de Lalo |
+| `db2` | MySQL réplica · PostgreSQL primario · Mongo cfg2 + shardA-2 | Many | Lalo |
+| `db3` | PostgreSQL standby · Mongo cfg3 + shardA-3 · mongos | laptop de Luis | Many |
 | `app` | API + simulador · mongos | VM escritorio | laptop de Luis |
 | `mon` | Prometheus + Grafana | VM escritorio | Diego (Windows) |
 
