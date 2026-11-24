@@ -1,5 +1,5 @@
 # Rol db1 (D17): MySQL PRIMARIO · Mongo cfg1 + shardA-1 · exporters
-# Casa: VM del escritorio. Uni: laptop de Vladimir.
+# Casa: VM del escritorio. Uni: laptop de Luis, junto con app (D30).
 name: ingdatos-db1
 
 x-mongo: &mongo
