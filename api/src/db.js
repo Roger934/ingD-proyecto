@@ -77,8 +77,11 @@ function conLimiteMysql(obj) {
   return obj;
 }
 
+// PROTOCOL_SEQUENCE_TIMEOUT: venció el límite por consulta (máquina sin red). Sin él en la lista, la API no
+// cambiaba de primario al desconectarse un cable y devolvía 500 (prueba de la PC completa, 2026-11-24).
 const ERR_MYSQL_REINTENTABLE = new Set(['ECONNREFUSED', 'ECONNRESET', 'ETIMEDOUT', 'EHOSTUNREACH', 'ENOTFOUND', 'EPIPE',
-  'PROTOCOL_CONNECTION_LOST', 'ER_OPTION_PREVENTS_STATEMENT', 'ER_SERVER_SHUTDOWN', 'ER_CON_COUNT_ERROR']);
+  'PROTOCOL_CONNECTION_LOST', 'PROTOCOL_SEQUENCE_TIMEOUT', 'ER_OPTION_PREVENTS_STATEMENT', 'ER_SERVER_SHUTDOWN',
+  'ER_CON_COUNT_ERROR']);
 
 const mysqlSel = selectorPrimario('mysql', CFG.mysqlHosts,
   (host) => conLimiteMysql(mysql.createPool({
@@ -111,8 +114,10 @@ const pgSel = selectorPrimario('postgres', CFG.pgHosts,
   (pool) => pool.end());
 
 // Los errores de pg traen "code"; los de conexión a veces vienen sin code y con este mensaje.
-const pgPerdida = (e) => ERR_PG_REINTENTABLE.has(e.code) || /terminat|Connection terminated|timeout/i.test(e.message || '');
-const mysqlPerdida = (e) => ERR_MYSQL_REINTENTABLE.has(e.code) || e.fatal === true;
+// "pool is closed" / "after calling end": la consulta iba en el pool del primario que se acaba de olvidar.
+const pgPerdida = (e) => ERR_PG_REINTENTABLE.has(e.code) ||
+  /terminat|Connection terminated|timeout|after calling end on the pool/i.test(e.message || '');
+const mysqlPerdida = (e) => ERR_MYSQL_REINTENTABLE.has(e.code) || e.fatal === true || /Pool is closed/i.test(e.message || '');
 
 // conReintento(selector, esPerdida, fn): corre fn(recurso). Si el error es de conexión o de
 // "solo lectura" (el primario cambió), olvida el primario, espera y reintenta (3 intentos con backoff).
@@ -144,16 +149,22 @@ const conPg = (fn) => conReintento('postgres', pgSel, pgPerdida, fn);
 async function txMysql(fn) {
   return conMysql(async (pool) => {
     const cx = conLimiteMysql(await pool.getConnection());
+    let roto = false;
     try {
-      await cx.beginTransaction();
+      // START TRANSACTION, COMMIT y ROLLBACK van por cx.query para que lleven el límite de tiempo.
+      // beginTransaction()/commit() de mysql2 no lo llevan: con el cable desconectado se quedaban
+      // esperando hasta que la máquina volvía, llenaban el pool y la API entera dejaba de responder.
+      await cx.query('START TRANSACTION');
       const r = await fn(cx);
-      await cx.commit();
+      await cx.query('COMMIT');
       return r;
     } catch (e) {
-      await cx.rollback().catch(() => {});
+      roto = mysqlPerdida(e);
+      // Con la conexión perdida, el ROLLBACK también se colgaría: se destruye y el servidor deshace solo.
+      if (!roto) await cx.query('ROLLBACK').catch(() => {});
       throw e;
     } finally {
-      cx.release();
+      if (roto) cx.destroy(); else cx.release();
     }
   });
 }
