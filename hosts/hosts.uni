@@ -1,11 +1,11 @@
-# Laboratorio final en la universidad (D17, D18, D30): módem Telmex de Luis, sin internet.
-# Las reservas por MAC viajan con el módem, así que estas IPs son las mismas allá.
-#   .102 = laptop de Luis      (db1 + app)
-#   .104 = laptop de Vladimir  (db2)
-#   .103 = laptop de Many      (db3, disco mecánico: sin MySQL)
-#   .106 = laptop de Diego     (mon, Windows)
+# Laboratorio final (D17, D18, D31). Una línea por rol.
+# Las reservas por MAC viven en cada módem: si se cambia de módem, hay que repetirlas.
+#   .102 = laptop de Luis                         (db1 + app)
+#   .105 = PC de escritorio, Mint en SSD por USB  (db2)
+#   .103 = laptop de Many                         (db3, disco mecánico: sin MySQL)
+#   .106 = monitoreo (Diego o Vladimir, por definir; si es Vladimir, cambiar a .104)
 192.168.1.102   db1
-192.168.1.104   db2
+192.168.1.105   db2
 192.168.1.103   db3
 192.168.1.102   app
 192.168.1.106   mon
