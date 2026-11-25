@@ -32,7 +32,7 @@ docker volume rm "ingdatos-${ROL}_pg-data" >/dev/null 2>&1 || true
 info "Copiando $PRIMARIO con pg_basebackup"
 export PGPASSWORD="$PG_REPL_PASSWORD"
 "${DC[@]}" run --rm --no-deps --user postgres -e PGPASSWORD --entrypoint pg_basebackup postgres \
-  -h "$PRIMARIO" -p 5432 -U repl_pg -D /var/lib/postgresql/data -R -X stream -P
+  -h "$PRIMARIO" -p 5432 -U repl_pg -D /var/lib/postgresql/data -R -X stream -P --checkpoint=fast
 unset PGPASSWORD
 
 "${DC[@]}" up -d postgres

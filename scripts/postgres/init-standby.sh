@@ -36,7 +36,7 @@ export PGPASSWORD="$PG_REPL_PASSWORD"
 "${DC[@]}" run --rm --no-deps --user postgres -e PGPASSWORD --entrypoint pg_basebackup postgres \
   -h db2 -p 5432 -U repl_pg \
   -D /var/lib/postgresql/data \
-  -R -X stream -P
+  -R -X stream -P --checkpoint=fast   # sin "fast" se queda en "waiting for checkpoint" hasta ~5 min
 unset PGPASSWORD
 
 info "Arrancando el standby"
