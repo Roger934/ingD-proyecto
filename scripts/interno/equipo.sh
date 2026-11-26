@@ -65,7 +65,7 @@ estado() {
   titulo "Red ($NOMBRE)"; ip -4 -br addr | grep -vE '^(lo|docker|br-)' || true
   titulo "Hora"; date
   titulo "Contenedores del proyecto"
-  docker ps -a --format '{{.Names}}\t{{.Status}}' | grep -E -- '-(db[0-9]|app)$|^node-exporter|^prometheus|^grafana' | sort || echo "  (ninguno)"
+  docker ps -a --format '{{.Names}}\t{{.Status}}' | grep -E -- $'-(db[0-9]|app)\t|^(node-exporter|prometheus|grafana)\t' | sort || echo "  (ninguno)"
   titulo "Primarios (vigilante)"; primarios
 }
 

@@ -48,6 +48,7 @@ for c in $locales; do
       titulo "Mongo shardA ($c)"
       mongo_admin "$c" 27018 "rs.status().members.forEach(m => print('  ' + m.name.padEnd(12) + m.stateStr))"
       ;;
+    mongos-exporter-*) ;;   # exporter de Prometheus, no es un mongos
     mongos-*)
       titulo "Mongo router ($c)"
       mongo_admin "$c" 27017 "
