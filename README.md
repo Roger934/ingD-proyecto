@@ -9,7 +9,7 @@ Cada máquina cumple uno o más **roles**. Los roles son nombres de host (`db1`,
 | Máquina | IP | Roles | Qué corre | Atajo |
 |---|---|---|---|---|
 | Laptop de Rogelio | 192.168.1.102 | `db1` + `app` | MySQL · Mongo cfg + shard · API · vigilante · simulador · `mongos` | `bash scripts/db1.sh` |
-| PC de escritorio | 192.168.1.105 | `db2` (+ `mon` temporal) | MySQL · PostgreSQL · Mongo cfg + shard · Prometheus · Grafana | `bash scripts/db2.sh` |
+| Laptop de Lalo | 192.168.1.105 | `db2` + `mon` | MySQL · PostgreSQL · Mongo cfg + shard · Prometheus · Grafana | `bash scripts/db2.sh` |
 | Laptop de Many | 192.168.1.103 | `db3` | PostgreSQL · Mongo cfg + shard · `mongos` | `bash scripts/db3.sh` |
 
 Todos los contenedores usan la red del host: cada servicio escucha en la IP de su máquina. Los primarios de MySQL y PostgreSQL cambian después de una falla; para saber cuál es: `curl -s app:8090/estado`.
@@ -40,7 +40,7 @@ Luego, en las 3 máquinas a la vez (cada una espera sola a las otras):
 
 ```bash
 bash scripts/db1.sh reiniciar    # laptop de Rogelio
-bash scripts/db2.sh reiniciar    # PC de escritorio
+bash scripts/db2.sh reiniciar    # laptop de Lalo
 bash scripts/db3.sh reiniciar    # laptop de Many
 ```
 

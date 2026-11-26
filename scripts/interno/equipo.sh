@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Acciones por máquina del laboratorio (D31). No se llama directo: cada máquina usa su atajo
 #   bash scripts/db1.sh <acción>   laptop de Rogelio  → db1 + app   (192.168.1.102)
-#   bash scripts/db2.sh <acción>   PC de escritorio   → db2 (+ mon) (192.168.1.105)
+#   bash scripts/db2.sh <acción>   laptop de Lalo     → db2 + mon   (192.168.1.105)
 #   bash scripts/db3.sh <acción>   laptop de Many     → db3         (192.168.1.103)
 #
 # Para revisar y mostrar (no cambian nada):
