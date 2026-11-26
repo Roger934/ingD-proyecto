@@ -213,7 +213,7 @@ for (let id = 1; id <= N.pedidos; id++) {
   }
 }
 
-const sqlMy = ['-- Generado por seed/generar.js. Carga: bash scripts/mysql/datos.sh (en db1)', 'SET NAMES utf8mb4;', 'SET autocommit = 0;'];
+const sqlMy = ['-- Generado por seed/generar.js. Carga: bash scripts/interno/mysql/datos.sh (en db1)', 'SET NAMES utf8mb4;', 'SET autocommit = 0;'];
 mysqlInserts(sqlMy, 'clientes', ['id', 'nombre', 'email', 'telefono', 'fecha_alta'], clientes.map((c) => [c.id, c.nombre, c.email, c.telefono, mysqlFecha(c.fecha_alta)]));
 mysqlInserts(sqlMy, 'direcciones', ['id', 'cliente_id', 'calle', 'ciudad', 'estado', 'cp', 'principal'], direcciones.map((d) => [d.id, d.cliente_id, d.calle, d.ciudad, d.estado, d.cp, d.principal]));
 mysqlInserts(sqlMy, 'pedidos', ['id', 'cliente_id', 'sucursal_id', 'fecha', 'total', 'estado', 'clave_idempotencia'], pedidos);
@@ -223,7 +223,7 @@ sqlMy.push('SET autocommit = 1;');
 fs.writeFileSync(path.join(SALIDA, 'mysql.sql'), sqlMy.join('\n') + '\n');
 
 // ---------- PostgreSQL: sucursales, productos_sucursal, inventario, reservas, movimientos ----------
-const sqlPg = ['-- Generado por seed/generar.js. Carga: bash scripts/postgres/datos.sh (en db2)', "SET client_encoding = 'UTF8';", 'BEGIN;'];
+const sqlPg = ['-- Generado por seed/generar.js. Carga: bash scripts/interno/postgres/datos.sh (en db2)', "SET client_encoding = 'UTF8';", 'BEGIN;'];
 pgCopy(sqlPg, 'sucursales', ['id', 'nombre', 'ciudad', 'region'], SUCURSALES);
 const ps = [], inv = [], movEntradas = [];
 const fechaEntrada = new Date('2025-12-15T09:00:00Z').toISOString();

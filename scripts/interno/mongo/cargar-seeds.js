@@ -1,4 +1,4 @@
-// Lo corre scripts/mongo/datos.sh DENTRO del contenedor mongos (mongosh --file).
+// Lo corre scripts/interno/mongo/datos.sh DENTRO del contenedor mongos (mongosh --file).
 // Lee /tmp/seed/<coleccion>.ndjson y lo inserta por lotes. Las fechas vienen en ISO y aquí se vuelven Date.
 const fs = require('fs');
 db.getSiblingDB('admin').auth('admin', process.env.MONGO_ADMIN_PASSWORD);

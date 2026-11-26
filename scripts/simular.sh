@@ -7,7 +7,7 @@
 #   bash scripts/simular.sh --ayuda
 # Ctrl+C detiene el envío e imprime el reporte de lo que alcanzó a correr.
 set -euo pipefail
-source "$(dirname "$0")/lib.sh"
+source "$(dirname "$0")/interno/lib.sh"
 
 [[ -f "$RAIZ/roles/app/.env" ]] || falla "Falta roles/app/.env. Este script se corre en la máquina con el rol app."
 

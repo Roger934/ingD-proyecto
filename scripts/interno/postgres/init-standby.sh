@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Se corre en db3 DESPUÉS de init-primario.sh en db2.
 # Copia el primario con pg_basebackup (streaming, sin slot: D27) y arranca el standby.
-#   bash scripts/postgres/init-standby.sh            → solo si el standby aún no existe
-#   bash scripts/postgres/init-standby.sh --forzar   → borra el standby actual y lo vuelve a copiar
+#   bash scripts/interno/postgres/init-standby.sh            → solo si el standby aún no existe
+#   bash scripts/interno/postgres/init-standby.sh --forzar   → borra el standby actual y lo vuelve a copiar
 set -euo pipefail
 source "$(dirname "$0")/../lib.sh"
 cargar_secretos

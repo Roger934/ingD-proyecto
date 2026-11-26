@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Prueba de punta a punta de POST /compras (hito de la S3: una compra recorre los 3 motores).
 # Se corre en cualquier máquina de la LAN con curl. Usa los datos de los seeds.
-#   bash scripts/probar-compra.sh            → contra http://app:8080
-#   API=http://192.168.1.101:8080 bash scripts/probar-compra.sh
+#   bash scripts/interno/probar-compra.sh            → contra http://app:8080
+#   API=http://192.168.1.101:8080 bash scripts/interno/probar-compra.sh
 set -uo pipefail
 source "$(dirname "$0")/lib.sh"
 API="${API:-http://app:8080}"

@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Se corre en db2 (primario). Crea las 5 tablas con inventario y movimientos particionadas
 # por sucursal (db/postgres/schema.sql). El standby las recibe solo por streaming. Idempotente.
-#   bash scripts/postgres/esquema.sh               → crea lo que falte
-#   bash scripts/postgres/esquema.sh --reiniciar   → BORRA las tablas y sus datos, y las vuelve a crear
+#   bash scripts/interno/postgres/esquema.sh               → crea lo que falte
+#   bash scripts/interno/postgres/esquema.sh --reiniciar   → BORRA las tablas y sus datos, y las vuelve a crear
 set -euo pipefail
 source "$(dirname "$0")/../lib.sh"
 

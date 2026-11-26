@@ -1,7 +1,7 @@
 # Funciones comunes. Se carga con:  source "$(dirname "$0")/../lib.sh"  (o ./lib.sh)
 # shellcheck shell=bash
 
-RAIZ="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+RAIZ="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 SECRETOS_ENV="$RAIZ/secretos/ingdatos.env"
 SECRETOS_KEYFILE="$RAIZ/secretos/mongo-keyfile"
 

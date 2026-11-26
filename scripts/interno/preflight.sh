@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # Revisa que una máquina esté lista para sus roles. No cambia nada salvo permisos de los .cnf.
-# Uso:  bash scripts/preflight.sh db1 app mon      (los roles que tendrá esta máquina)
+# Uso:  bash scripts/interno/preflight.sh db1 app mon      (los roles que tendrá esta máquina)
 set -uo pipefail
 source "$(dirname "$0")/lib.sh"
 
-[[ $# -gt 0 ]] || falla "Uso: bash scripts/preflight.sh <rol> [rol...]   (db1 db2 db3 app mon)"
+[[ $# -gt 0 ]] || falla "Uso: bash scripts/interno/preflight.sh <rol> [rol...]   (db1 db2 db3 app mon)"
 ROLES_MAQUINA=("$@")
 problemas=0
 mal() { printf '\033[31m✘\033[0m %s\n' "$*"; problemas=$((problemas + 1)); }
@@ -36,7 +36,7 @@ ok "RAM disponible ahora: ${disp} GiB"
 titulo "Nombres de rol (/etc/hosts)"
 for r in db1 db2 db3 app mon; do
   ip=$(getent hosts "$r" | awk '{print $1; exit}')
-  if [[ -z $ip ]]; then mal "'$r' no resuelve. Corre: bash scripts/aplicar-hosts.sh casa"
+  if [[ -z $ip ]]; then mal "'$r' no resuelve. Corre: bash scripts/interno/aplicar-hosts.sh casa"
   elif [[ $ip == 127.* ]]; then mal "'$r' resuelve a $ip (loopback): rompe la replicación"
   else ok "$r → $ip"; fi
 done

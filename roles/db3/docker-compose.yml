@@ -11,7 +11,7 @@ x-mongo: &mongo
 services:
   # El standby NO arranca con un "docker compose up -d" normal (perfil "standby"):
   # con el volumen vacío se crearía una base nueva en vez de copiar la del primario.
-  # Lo crea y lo arranca scripts/postgres/init-standby.sh (pg_basebackup desde db2).
+  # Lo crea y lo arranca scripts/interno/postgres/init-standby.sh (pg_basebackup desde db2).
   postgres:
     image: postgres:16.6
     container_name: postgres-db3

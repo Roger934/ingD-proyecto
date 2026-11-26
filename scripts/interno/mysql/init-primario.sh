@@ -42,4 +42,4 @@ SQL
 
 docker exec -e MYSQL_PWD "$C" mysql --default-character-set=utf8mb4 -uroot -t -e \
   "SELECT @@server_id AS server_id, @@gtid_mode AS gtid_mode, @@read_only AS read_only; SHOW BINARY LOG STATUS;"
-ok "db1 listo como primario. Sigue: en db2, bash scripts/mysql/init-replica.sh"
+ok "db1 listo como primario. Sigue: en db2, bash scripts/interno/mysql/init-replica.sh"

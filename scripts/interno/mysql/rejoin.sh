@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Reengancha el MySQL de ESTA máquina como RÉPLICA del primario actual. Respaldo manual del vigilante (D27),
 # que normalmente lo hace solo.
-#   bash scripts/mysql/rejoin.sh db2                 → réplica de db2 por GTID (si los datos son compatibles)
-#   bash scripts/mysql/rejoin.sh db2 --reconstruir   → BORRA este MySQL y lo vuelve a crear como réplica de db2
+#   bash scripts/interno/mysql/rejoin.sh db2                 → réplica de db2 por GTID (si los datos son compatibles)
+#   bash scripts/interno/mysql/rejoin.sh db2 --reconstruir   → BORRA este MySQL y lo vuelve a crear como réplica de db2
 #                                                      (cuando tiene transacciones que el primario no tiene).
 #                                                      Le da un server_id nuevo para no saltarse eventos propios.
 set -euo pipefail
@@ -11,7 +11,7 @@ cargar_secretos
 export MYSQL_PWD="$MYSQL_ROOT_PASSWORD" MYSQL_FAILOVER_PASSWORD
 
 PRIMARIO="${1:-}"
-[[ "$PRIMARIO" =~ ^db[0-9]$ ]] || falla "Uso: bash scripts/mysql/rejoin.sh <primario: db1|db2> [--reconstruir]"
+[[ "$PRIMARIO" =~ ^db[0-9]$ ]] || falla "Uso: bash scripts/interno/mysql/rejoin.sh <primario: db1|db2> [--reconstruir]"
 C="$(docker ps -a --format '{{.Names}}' | grep -m1 '^mysql-db' || true)"
 [[ -n "$C" ]] || falla "No hay un contenedor de MySQL en esta máquina."
 ROL="${C#mysql-}"
@@ -57,7 +57,7 @@ else
   gtid=$(sql -N -e "SELECT REPLACE(@@global.gtid_executed, '\n', '')")
   compatible=$(en_primario -e "SELECT GTID_SUBSET('$gtid', @@global.gtid_executed)") \
     || falla "No pude consultar a $PRIMARIO con el usuario failover_mysql. ¿Está arriba?"
-  [[ "$compatible" == "1" ]] || falla "$C tiene transacciones que $PRIMARIO no tiene. Usa: bash scripts/mysql/rejoin.sh $PRIMARIO --reconstruir"
+  [[ "$compatible" == "1" ]] || falla "$C tiene transacciones que $PRIMARIO no tiene. Usa: bash scripts/interno/mysql/rejoin.sh $PRIMARIO --reconstruir"
   info "Reenganchando $C como réplica de $PRIMARIO"
   sql -e "SET GLOBAL read_only = ON; SET GLOBAL super_read_only = OFF;"
   configurar_replica

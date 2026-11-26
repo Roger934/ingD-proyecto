@@ -46,4 +46,4 @@ SQL
 
 docker exec -u postgres "$C" psql -d ecommerce -c \
   "SELECT pg_is_in_recovery() AS es_standby, current_setting('wal_level') AS wal_level, (SELECT string_agg(slot_name, ', ') FROM pg_replication_slots) AS slots;"
-ok "db2 listo como primario. Sigue: en db3, bash scripts/postgres/init-standby.sh"
+ok "db2 listo como primario. Sigue: en db3, bash scripts/interno/postgres/init-standby.sh"

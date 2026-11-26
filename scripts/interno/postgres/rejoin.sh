@@ -3,13 +3,13 @@
 # Se usa cuando el vigilante avisa que este nodo "no está recibiendo WAL" o quedó "cercado": por
 # ejemplo, el viejo primario que regresó después de un apagado brusco y ya no coincide con el nuevo.
 # BORRA la copia local y la vuelve a copiar del primario con pg_basebackup (con ~110k filas, segundos).
-#   bash scripts/postgres/rejoin.sh db3      (en la máquina que debe volver a ser standby)
+#   bash scripts/interno/postgres/rejoin.sh db3      (en la máquina que debe volver a ser standby)
 set -euo pipefail
 source "$(dirname "$0")/../lib.sh"
 cargar_secretos
 
 PRIMARIO="${1:-}"
-[[ "$PRIMARIO" =~ ^db[0-9]$ ]] || falla "Uso: bash scripts/postgres/rejoin.sh <primario: db2|db3>"
+[[ "$PRIMARIO" =~ ^db[0-9]$ ]] || falla "Uso: bash scripts/interno/postgres/rejoin.sh <primario: db2|db3>"
 C="$(docker ps -a --format '{{.Names}}' | grep -m1 '^postgres-db' || true)"
 [[ -n "$C" ]] || falla "No hay un contenedor de PostgreSQL en esta máquina."
 ROL="${C#postgres-}"

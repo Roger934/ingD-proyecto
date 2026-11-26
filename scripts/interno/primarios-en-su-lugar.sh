@@ -7,13 +7,13 @@
 # lugar, espera a que el vigilante promueva al otro nodo y lo vuelve a encender como réplica.
 # Cada motor se queda unos 10 s sin primario: correr SIN carga (sin simulador).
 #
-#   bash scripts/primarios-en-su-lugar.sh         → revisa y, si hace falta, pregunta antes de mover
-#   bash scripts/primarios-en-su-lugar.sh --si    → no pregunta (para correrlo por ssh)
+#   bash scripts/interno/primarios-en-su-lugar.sh         → revisa y, si hace falta, pregunta antes de mover
+#   bash scripts/interno/primarios-en-su-lugar.sh --si    → no pregunta (para correrlo por ssh)
 #
 # Se puede correr en cualquier máquina. Solo mueve un primario si su contenedor está EN ESTA máquina;
 # si está en otra, dice en cuál hay que correrlo. Mongo se revisa desde cualquiera que tenga un
 # contenedor de Mongo (db1 recupera el puesto solo, por su prioridad 2).
-# Otros destinos: PRIMARIO_MYSQL=db2 PRIMARIO_PG=db3 PRIMARIO_MONGO=db1 bash scripts/primarios-en-su-lugar.sh
+# Otros destinos: PRIMARIO_MYSQL=db2 PRIMARIO_PG=db3 PRIMARIO_MONGO=db1 bash scripts/interno/primarios-en-su-lugar.sh
 set -uo pipefail
 source "$(dirname "$0")/lib.sh"
 
@@ -24,7 +24,7 @@ SI=0
 case "${1:-}" in
   "") ;;
   --si) SI=1 ;;
-  *) falla "Uso: bash scripts/primarios-en-su-lugar.sh [--si]" ;;
+  *) falla "Uso: bash scripts/interno/primarios-en-su-lugar.sh [--si]" ;;
 esac
 
 # ---------- Vigilante ----------
@@ -97,7 +97,7 @@ ceder() {  # ceder <motor> <actual> <deseado>   (usa $C = contenedor local del p
   fi
   if ! replica_al_dia "$motor" "$deseado"; then
     sleep 3   # una segunda oportunidad: la réplica puede ir unos milisegundos atrás
-    replica_al_dia "$motor" "$deseado" || { aviso "$deseado no está al día con $actual (¿hay carga o la réplica está detenida?). No muevo $motor. Revisa: bash scripts/verificar.sh"; return 1; }
+    replica_al_dia "$motor" "$deseado" || { aviso "$deseado no está al día con $actual (¿hay carga o la réplica está detenida?). No muevo $motor. Revisa: bash scripts/interno/verificar.sh"; return 1; }
   fi
   ok "$deseado tiene todos los datos de $actual"
 
@@ -186,7 +186,7 @@ else
         "db.getSiblingDB('admin').auth('admin', process.env.MONGO_ADMIN_PASSWORD); rs.stepDown(60)" >/dev/null 2>&1 || true
       esperar_a "$rs vuelve a $DESEADO_MONGO" 40 en_su_lugar_mongo "$puerto" && continue
     fi
-    aviso "$rs sigue con su primario en ${actual%%:*}. Revisa en $DESEADO_MONGO: bash scripts/verificar.sh"
+    aviso "$rs sigue con su primario en ${actual%%:*}. Revisa en $DESEADO_MONGO: bash scripts/interno/verificar.sh"
     pendientes=$((pendientes + 1))
   done
 fi

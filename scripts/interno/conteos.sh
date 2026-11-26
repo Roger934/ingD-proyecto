@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Cuenta registros por tabla/colección en los motores que corren EN ESTA máquina.
 # Sirve para ver que los datos llegaron a las réplicas: en db2 muestra la réplica de MySQL, en db3 el standby.
-#   bash scripts/conteos.sh                 → todos los motores locales
-#   bash scripts/conteos.sh mysql|postgres|mongo
+#   bash scripts/interno/conteos.sh                 → todos los motores locales
+#   bash scripts/interno/conteos.sh mysql|postgres|mongo
 set -uo pipefail
 source "$(dirname "$0")/lib.sh"
 cargar_secretos

@@ -65,4 +65,4 @@ iniciar_rs cfgRS  27019 mongo-cfg-db1   true  0
 iniciar_rs shardA 27018 mongo-shard-db1 false 1
 
 echo
-ok "Replica sets listos. Sigue: en db3, bash scripts/mongo/init-sharding.sh"
+ok "Replica sets listos. Sigue: en db3, bash scripts/interno/mongo/init-sharding.sh"

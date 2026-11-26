@@ -5,13 +5,13 @@
 # Excepción: el rol mon publica 3000 y 9090 con Docker, y Docker abre esos dos por su cuenta sin
 # pasar por ufw (quedan abiertos a quien alcance la máquina, no solo a la LAN).
 #
-#   bash scripts/firewall.sh                          → solo muestra lo que haría (no cambia nada)
-#   sudo bash scripts/firewall.sh --aplicar           → borra las reglas anteriores de ufw, pone estas y lo activa
-#   sudo bash scripts/firewall.sh --aplicar --abrir 27100   → además deja abierto un puerto ajeno al proyecto
+#   bash scripts/interno/firewall.sh                          → solo muestra lo que haría (no cambia nada)
+#   sudo bash scripts/interno/firewall.sh --aplicar           → borra las reglas anteriores de ufw, pone estas y lo activa
+#   sudo bash scripts/interno/firewall.sh --aplicar --abrir 27100   → además deja abierto un puerto ajeno al proyecto
 #                                                       (se puede repetir --abrir; queda abierto como hoy, sin limitar a la LAN)
 #
 # Los roles se detectan por los contenedores de la máquina (db1, db2, db3, app, mon). Para forzarlos:
-#   ROLES="db3" bash scripts/firewall.sh        Otra red:  LAN=10.0.0.0/24 bash scripts/firewall.sh
+#   ROLES="db3" bash scripts/interno/firewall.sh        Otra red:  LAN=10.0.0.0/24 bash scripts/interno/firewall.sh
 # Para quitarlo:  sudo ufw disable
 set -euo pipefail
 source "$(dirname "$0")/lib.sh"
@@ -35,7 +35,7 @@ while (( $# )); do
       shift
       [[ "${1:-}" =~ ^[0-9]+$ ]] && (( $1 >= 1 && $1 <= 65535 )) || falla "--abrir necesita un número de puerto (1 a 65535)"
       EXTRAS+=("$1") ;;
-    *) falla "Uso: bash scripts/firewall.sh [--aplicar] [--abrir PUERTO]..." ;;
+    *) falla "Uso: bash scripts/interno/firewall.sh [--aplicar] [--abrir PUERTO]..." ;;
   esac
   shift
 done
@@ -46,7 +46,7 @@ if [[ -z "${ROLES:-}" ]]; then
   ROLES="$( { grep -oE -- '-(db[0-9]|app)$' <<<"$nombres" | tr -d '-'
               grep -qxE 'prometheus|grafana' <<<"$nombres" && echo mon; } | sort -u | tr '\n' ' ' || true)"
 fi
-[[ -n "${ROLES// /}" ]] || falla "Esta máquina no tiene contenedores del proyecto. Indica los roles: ROLES=\"db3\" bash scripts/firewall.sh"
+[[ -n "${ROLES// /}" ]] || falla "Esta máquina no tiene contenedores del proyecto. Indica los roles: ROLES=\"db3\" bash scripts/interno/firewall.sh"
 
 puertos="$COMUNES"
 for rol in $ROLES; do
@@ -79,12 +79,12 @@ echo "  Salida: sin cambios (todo permitido)"
 
 if (( ! APLICAR )); then
   echo
-  info "No se cambió nada. Para aplicarlo: sudo bash scripts/firewall.sh --aplicar${EXTRAS[*]:+ $(printf -- '--abrir %s ' "${EXTRAS[@]}")}"
+  info "No se cambió nada. Para aplicarlo: sudo bash scripts/interno/firewall.sh --aplicar${EXTRAS[*]:+ $(printf -- '--abrir %s ' "${EXTRAS[@]}")}"
   exit 0
 fi
 
 # ---------- Aplicar ----------
-[[ $EUID -eq 0 ]] || falla "Para aplicar hace falta sudo: sudo bash scripts/firewall.sh --aplicar ..."
+[[ $EUID -eq 0 ]] || falla "Para aplicar hace falta sudo: sudo bash scripts/interno/firewall.sh --aplicar ..."
 command -v ufw >/dev/null || falla "ufw no está instalado: sudo apt install ufw"
 
 info "Borrando las reglas anteriores de ufw (ufw guarda una copia en /etc/ufw/*.rules.<fecha>)"
@@ -104,4 +104,4 @@ for p in "${EXTRAS[@]}"; do
 done
 ufw --force enable >/dev/null
 ufw status verbose
-ok "Firewall activo en $(hostname). Revisa desde otra máquina: bash scripts/verificar.sh y una compra de prueba."
+ok "Firewall activo en $(hostname). Revisa desde otra máquina: bash scripts/interno/verificar.sh y una compra de prueba."

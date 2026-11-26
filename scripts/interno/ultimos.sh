@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # Últimos pedidos y su recorrido por los 3 motores (Saga), leídos a través de la API.
 # Sirve para la demo: después del simulador muestra que cada compra quedó en MySQL, PostgreSQL y Mongo.
-#   bash scripts/ultimos.sh              → los últimos 5 pedidos
-#   bash scripts/ultimos.sh 10           → los últimos 10 (máximo 50)
-#   bash scripts/ultimos.sh --pedido 123 → solo el pedido 123
+#   bash scripts/interno/ultimos.sh              → los últimos 5 pedidos
+#   bash scripts/interno/ultimos.sh 10           → los últimos 10 (máximo 50)
+#   bash scripts/interno/ultimos.sh --pedido 123 → solo el pedido 123
 # Corre en cualquier máquina que alcance a app:8080. Necesita curl y jq (sudo apt install jq; sin internet, antes).
 set -euo pipefail
 source "$(dirname "$0")/lib.sh"
@@ -14,9 +14,9 @@ export TZ="${TZ:-America/Mexico_City}"   # horas como en Grafana y en el reporte
 command -v jq >/dev/null || falla "Falta jq: sudo apt install jq"
 
 case "${1:-}" in
-  --pedido) [[ "${2:-}" =~ ^[0-9]+$ ]] || falla "Uso: bash scripts/ultimos.sh --pedido <id>"; IDS="$2" ;;
+  --pedido) [[ "${2:-}" =~ ^[0-9]+$ ]] || falla "Uso: bash scripts/interno/ultimos.sh --pedido <id>"; IDS="$2" ;;
   "")       IDS=$(curl -fsS -m 10 "$API/pedidos?ultimos=5" | jq -r '.ids[]') ;;
-  *)        [[ "$1" =~ ^[0-9]+$ ]] || falla "Uso: bash scripts/ultimos.sh [N] | --pedido <id>"
+  *)        [[ "$1" =~ ^[0-9]+$ ]] || falla "Uso: bash scripts/interno/ultimos.sh [N] | --pedido <id>"
             IDS=$(curl -fsS -m 10 "$API/pedidos?ultimos=$1" | jq -r '.ids[]') ;;
 esac
 [[ -n "$IDS" ]] || falla "La API no devolvió pedidos ($API)"

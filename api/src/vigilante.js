@@ -189,7 +189,7 @@ async function cicloMysql(m) {
         cRejoins.inc({ motor: 'mysql' });
         anotar('mysql', `REJOIN: ${h} vuelve como réplica de ${p}`);
       } else {
-        avisarCada(m, 'div-' + h, 60000, `${h} tiene transacciones que ${p} no tiene: no se reengancha solo. Corre en ${h}: bash scripts/mysql/rejoin.sh ${p} --reconstruir`);
+        avisarCada(m, 'div-' + h, 60000, `${h} tiene transacciones que ${p} no tiene: no se reengancha solo. Corre en ${h}: bash scripts/interno/mysql/rejoin.sh ${p} --reconstruir`);
       }
     }
     return;
@@ -295,7 +295,7 @@ async function cicloPg(m) {
     for (const h of escribibles.filter((x) => x !== queda)) {
       await cercarPg(h);
       cFencing.inc({ motor: 'postgres' });
-      anotar('postgres', `FENCING: ${h} también era primario; queda en solo lectura. Para reengancharlo, en ${h}: bash scripts/postgres/rejoin.sh ${queda}`);
+      anotar('postgres', `FENCING: ${h} también era primario; queda en solo lectura. Para reengancharlo, en ${h}: bash scripts/interno/postgres/rejoin.sh ${queda}`);
     }
     escribibles = [queda];
   }
@@ -309,10 +309,10 @@ async function cicloPg(m) {
       const n = m.nodos[h];
       if (n.standby && n.streaming && n.fuente === p) { m.seguia[h] = Date.now(); continue; }
       if (n.cercado) {
-        avisarCada(m, 'cerc-' + h, 60000, `${h} quedó como primario sobrante (cercado). En ${h}: bash scripts/postgres/rejoin.sh ${p}`);
+        avisarCada(m, 'cerc-' + h, 60000, `${h} quedó como primario sobrante (cercado). En ${h}: bash scripts/interno/postgres/rejoin.sh ${p}`);
       } else if (Date.now() - (m.seguia[h] || 0) > 30000) {
         // El standby debería conectarse solo al primario en pocos segundos; si no, divergió
-        avisarCada(m, 'div-' + h, 60000, `${h} no está recibiendo WAL de ${p}. Si no se arregla solo, en ${h}: bash scripts/postgres/rejoin.sh ${p}`);
+        avisarCada(m, 'div-' + h, 60000, `${h} no está recibiendo WAL de ${p}. Si no se arregla solo, en ${h}: bash scripts/interno/postgres/rejoin.sh ${p}`);
       }
     }
     return;

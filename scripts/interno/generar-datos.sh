@@ -2,8 +2,8 @@
 # Genera seed/datos/ (catálogo maestro + seeds de los 3 motores) con seed/generar.js.
 # Es determinista: en cualquier máquina salen los mismos datos, así que cada máquina puede generarlos ella misma.
 # Usa Node si la máquina lo tiene (≥ 18); si no, lo corre en un contenedor de Node.
-#   bash scripts/generar-datos.sh            → solo si todavía no existen
-#   bash scripts/generar-datos.sh --forzar   → los vuelve a generar
+#   bash scripts/interno/generar-datos.sh            → solo si todavía no existen
+#   bash scripts/interno/generar-datos.sh --forzar   → los vuelve a generar
 set -euo pipefail
 source "$(dirname "$0")/lib.sh"
 

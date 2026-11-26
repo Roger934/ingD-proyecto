@@ -5,7 +5,7 @@
 #                                                  siempre recopia el .env a los roles
 #   bash scripts/generar-secretos.sh --forzar   → regenera TODO (¡rompe un clúster ya inicializado!)
 set -euo pipefail
-source "$(dirname "$0")/lib.sh"
+source "$(dirname "$0")/interno/lib.sh"
 
 command -v openssl >/dev/null || falla "Se necesita openssl (Git Bash y Linux ya lo traen)."
 mkdir -p "$RAIZ/secretos"

@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Se corre en db1 (primario). Crea las 5 tablas y la vista pedido_completo (db/mysql/schema.sql).
 # La réplica las recibe sola por replicación. Idempotente.
-#   bash scripts/mysql/esquema.sh               → crea lo que falte
-#   bash scripts/mysql/esquema.sh --reiniciar   → BORRA las tablas y sus datos, y las vuelve a crear
+#   bash scripts/interno/mysql/esquema.sh               → crea lo que falte
+#   bash scripts/interno/mysql/esquema.sh --reiniciar   → BORRA las tablas y sus datos, y las vuelve a crear
 set -euo pipefail
 source "$(dirname "$0")/../lib.sh"
 cargar_secretos

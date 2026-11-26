@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Se corre donde haya un mongos (db3 o app). Crea las 5 colecciones y sus índices (db/mongo/init.js).
 # No toca el sharding de catalogo y eventos (eso lo hizo init-sharding.sh). Idempotente.
-#   bash scripts/mongo/esquema.sh               → crea lo que falte
-#   bash scripts/mongo/esquema.sh --reiniciar   → VACÍA las 5 colecciones (conserva sharding e índices)
+#   bash scripts/interno/mongo/esquema.sh               → crea lo que falte
+#   bash scripts/interno/mongo/esquema.sh --reiniciar   → VACÍA las 5 colecciones (conserva sharding e índices)
 set -euo pipefail
 source "$(dirname "$0")/../lib.sh"
 cargar_secretos

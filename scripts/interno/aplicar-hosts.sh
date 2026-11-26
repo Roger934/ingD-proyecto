@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Instala en /etc/hosts los nombres de rol (db1, db2, db3, app, mon) del entorno elegido.
-# Uso:  bash scripts/aplicar-hosts.sh casa      (o: uni)
+# Uso:  bash scripts/interno/aplicar-hosts.sh casa      (o: uni)
 # Es idempotente: reemplaza el bloque anterior entre las marcas, no duplica líneas.
 set -euo pipefail
 
@@ -10,7 +10,7 @@ if [[ "$ENTORNO" != "casa" && "$ENTORNO" != "uni" ]]; then
   exit 1
 fi
 
-RAIZ="$(cd "$(dirname "$0")/.." && pwd)"
+RAIZ="$(cd "$(dirname "$0")/../.." && pwd)"
 ORIGEN="$RAIZ/hosts/hosts.$ENTORNO"
 [[ -f "$ORIGEN" ]] || { echo "No existe $ORIGEN" >&2; exit 1; }
 
@@ -30,7 +30,7 @@ awk -v ini="$INICIO" -v fin="$FIN" '
 
 # 2. Bloque nuevo (sin comentarios, sin líneas vacías, sin \r de Windows).
 {
-  echo "$INICIO ($ENTORNO) — generado por scripts/aplicar-hosts.sh"
+  echo "$INICIO ($ENTORNO) — generado por scripts/interno/aplicar-hosts.sh"
   tr -d '\r' < "$ORIGEN" | grep -vE '^[[:space:]]*(#|$)'
   echo "$FIN"
 } >> "$TMP"
